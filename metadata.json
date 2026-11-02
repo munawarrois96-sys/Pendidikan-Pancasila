@@ -1,0 +1,6 @@
+{
+  "name": "Pendidikan Pancasila Interaktif - SMA Negeri 1 Mande",
+  "description": "Platform pembelajaran digital Pendidikan Pancasila SMA kelas X, XI, XII SMA Negeri 1 Mande (SMANDE) dengan materi kurikulum merdeka, game petualangan 2D, kuis interaktif, simulasi demokrasi, bank soal, dan dashboard guru.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

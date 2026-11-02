@@ -1,0 +1,1238 @@
+import React, { useState } from 'react';
+import { materialsData } from './data/materialsData';
+import { questionsBank } from './data/quizData';
+import { initialAnnouncements } from './data/forumAndAnnouncements';
+import { defaultStudents, defaultTeacher, defaultAdmin } from './utils/userStore';
+import { MaterialSection, Question, QuizAttempt, UserProfile, GradeLevel } from './types';
+import { sound } from './utils/audio';
+
+// Components
+import { PancasilaPlatformer } from './components/games/PancasilaPlatformer';
+import { SpeedQuizGame } from './components/games/SpeedQuizGame';
+import { DetectiveGame } from './components/games/DetectiveGame';
+import { ElectionSimGame } from './components/games/ElectionSimGame';
+import { PancasilaPuzzleGame } from './components/games/PancasilaPuzzleGame';
+import { MaterialDetailView } from './components/MaterialDetailView';
+import { QuizEngine } from './components/QuizEngine';
+import { TeacherDashboard } from './components/TeacherDashboard';
+import { SimulationsView } from './components/SimulationsView';
+import { ELibraryView } from './components/ELibraryView';
+import { ForumDiscussionView } from './components/ForumDiscussionView';
+import { ProfileAndCompetitionsView } from './components/ProfileAndCompetitionsView';
+import { NusantaraInteractiveMap } from './components/NusantaraInteractiveMap';
+import { AITutorModal } from './components/AITutorModal';
+
+// Icons
+import {
+  Home,
+  BookOpen,
+  Play,
+  Gamepad2,
+  CheckSquare,
+  Brain,
+  Award,
+  Vote,
+  Library,
+  MessageSquare,
+  Calendar,
+  UserCheck,
+  User,
+  Info,
+  Bot,
+  Volume2,
+  VolumeX,
+  Menu,
+  X,
+  Sparkles,
+  ArrowRight,
+  GraduationCap,
+  Clock,
+  ChevronRight,
+  Compass,
+  Megaphone,
+} from 'lucide-react';
+
+export default function App() {
+  // Navigation State
+  const [activeMenu, setActiveMenu] = useState<string>('beranda');
+  const [selectedGrade, setSelectedGrade] = useState<GradeLevel>('XI');
+  const [selectedMaterial, setSelectedMaterial] = useState<MaterialSection | null>(null);
+  const [activeQuizQuestions, setActiveQuizQuestions] = useState<Question[] | null>(null);
+  const [activeQuizTitle, setActiveQuizTitle] = useState<string>('');
+
+  // Game sub-tab state
+  const [activeGameTab, setActiveGameTab] = useState<'platformer' | 'speed' | 'detective' | 'pemilu' | 'puzzle'>('platformer');
+
+  // User State & Role Switching
+  const [currentUser, setCurrentUser] = useState<UserProfile>(defaultStudents[0]);
+  const [isSoundMuted, setIsSoundMuted] = useState(false);
+  const [isAiTutorOpen, setIsAiTutorOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [fontSize, setFontSize] = useState<'normal' | 'large'>('normal');
+
+  const toggleSound = () => {
+    const next = !isSoundMuted;
+    setIsSoundMuted(next);
+    sound.setMuted(next);
+  };
+
+  const handleRoleChange = (role: 'siswa' | 'guru' | 'admin') => {
+    sound.playClick();
+    if (role === 'siswa') setCurrentUser(defaultStudents[0]);
+    else if (role === 'guru') setCurrentUser(defaultTeacher);
+    else setCurrentUser(defaultAdmin);
+  };
+
+  // Start specific quiz from a material
+  const handleStartMaterialQuiz = (quizId: string) => {
+    sound.playClick();
+    const qs = questionsBank.filter(
+      (q) => q.grade === (selectedMaterial?.grade || selectedGrade)
+    );
+    setActiveQuizQuestions(qs.length > 0 ? qs : questionsBank.slice(0, 5));
+    setActiveQuizTitle(`Asesmen Formatif: ${selectedMaterial?.title || 'Pendidikan Pancasila'}`);
+    setActiveMenu('kuis');
+  };
+
+  const handleQuizFinish = (attempt: QuizAttempt) => {
+    const earnedPts = Math.round(attempt.score / 2);
+    setCurrentUser((prev) => ({
+      ...prev,
+      points: prev.points + earnedPts,
+      quizScores: { ...prev.quizScores, [attempt.quizId]: attempt.score },
+    }));
+  };
+
+  // Navigation Drawer (Garis Tiga) State
+  const [isNavDrawerOpen, setIsNavDrawerOpen] = useState(false);
+
+  // 15 Main Navigation Items with categories for clear visitor navigation
+  const navItems = [
+    { id: 'beranda', label: 'Beranda', icon: Home, category: 'Utama', desc: 'Sambutan guru, profil sekolah, dan gambaran umum' },
+    { id: 'materi', label: 'Materi Belajar', icon: BookOpen, category: 'Pembelajaran', desc: 'Modul Kurikulum Merdeka Kelas X, XI, XII' },
+    { id: 'video', label: 'Video Animasi', icon: Play, category: 'Pembelajaran', desc: 'Video pembelajaran interaktif & studi kasus' },
+    { id: 'game', label: 'Game Edukasi (5)', icon: Gamepad2, category: 'Interaktif', desc: 'Platformer 2D, Kuis Kilat, Detektif, Pemilu, Puzzle' },
+    { id: 'kuis', label: 'Kuis Interaktif', icon: CheckSquare, category: 'Asesmen', desc: '7 jenis soal dengan penilaian otomatis' },
+    { id: 'bankSoal', label: 'Bank Soal', icon: Brain, category: 'Asesmen', desc: 'Latihan soal HOTS per bab dan tingkat kesulitan' },
+    { id: 'kompetisi', label: 'Kompetisi & Lencana', icon: Award, category: 'Prestasi', desc: 'Leaderboard, poin, badges & sertifikat digital' },
+    { id: 'simulasi', label: 'Simulasi Demokrasi', icon: Vote, category: 'Interaktif', desc: 'Sidang PPKI, Musyawarah Kelas, OSIS & MK' },
+    { id: 'nusantara', label: 'Peta Nusantara', icon: Compass, category: 'Kebinekaan', desc: 'Eksplorasi budaya dan gotong royong 38 provinsi' },
+    { id: 'elibrary', label: 'E-Library', icon: Library, category: 'Referensi', desc: 'Buku Kemdikbud, UUD 1945, 45 Butir Sila' },
+    { id: 'forum', label: 'Forum Diskusi', icon: MessageSquare, category: 'Komunitas', desc: 'Mimbar musyawarah & refleksi etika berbangsa' },
+    { id: 'agenda', label: 'Agenda & Tugas', icon: Calendar, category: 'Sekolah', desc: 'Kalender asesmen & hari besar nasional' },
+    { id: 'dashboardGuru', label: 'Dashboard Guru', icon: UserCheck, category: 'Manajemen', desc: 'Panel guru, bank soal & rekap ekspor nilai' },
+    { id: 'profil', label: 'Profil Siswa', icon: User, category: 'Pengguna', desc: 'Portofolio Profil Pelajar Pancasila & sertifikat' },
+    { id: 'tentang', label: 'Tentang Web', icon: Info, category: 'Informasi', desc: 'Profil SMA Negeri 1 Mande & tim pengampu' },
+  ];
+
+  return (
+    <div className={`min-h-screen bg-gradient-to-b from-sky-100/70 via-sky-50 to-white text-slate-800 flex flex-col font-sans ${fontSize === 'large' ? 'text-lg' : 'text-base'}`}>
+      {/* Top Banner & Header */}
+      <header className="sticky top-0 z-40 bg-sky-600 text-white shadow-md border-b border-sky-500">
+        {/* Top Flag Strip */}
+        <div className="h-1.5 w-full flex">
+          <div className="bg-red-600 w-1/2 h-full" />
+          <div className="bg-white w-1/2 h-full" />
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
+          {/* Logo Brand with Uploaded Official Logo */}
+          <div
+            onClick={() => {
+              setActiveMenu('beranda');
+              setSelectedMaterial(null);
+              sound.playClick();
+            }}
+            className="flex items-center gap-2.5 md:gap-3 cursor-pointer group select-none"
+          >
+            <div className="w-11 h-11 md:w-12 md:h-12 rounded-2xl bg-white p-1 shadow-md group-hover:scale-105 transition-transform flex items-center justify-center overflow-hidden border border-sky-300 shrink-0">
+              <img
+                src="/assets/aistudio/Logo_Pembelajaran_Interaktif_Pendidikan_Pancasila__1__a1b85239.png"
+                alt="Logo Ruang Pendidikan Pancasila SMA Negeri 1 Mande"
+                className="w-full h-full object-contain"
+              />
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="font-extrabold text-sm md:text-base text-white tracking-tight drop-shadow-sm">
+                  Pendidikan Pancasila
+                </span>
+                <span className="text-[10px] bg-amber-400 text-sky-950 font-black px-1.5 py-0.2 rounded shadow-sm">
+                  SMANDE
+                </span>
+              </div>
+              <p className="text-[11px] text-sky-100 font-medium truncate max-w-[200px] sm:max-w-none">
+                SMA Negeri 1 Mande • Kurikulum Merdeka
+              </p>
+            </div>
+          </div>
+
+          {/* User Quick Info & Action Controls */}
+          <div className="flex items-center gap-2">
+            {/* Tombol Garis Tiga (Navigasi Pengunjung) - Jelas dan Terlihat di Semua Mode */}
+            <button
+              onClick={() => {
+                setIsNavDrawerOpen(true);
+                sound.playClick();
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white text-sky-800 hover:bg-sky-50 font-extrabold text-xs md:text-sm rounded-xl shadow-md transition-all border border-sky-200 active:scale-95"
+              title="Buka Menu Navigasi Pengunjung (Garis Tiga)"
+            >
+              <Menu size={18} className="text-sky-700 stroke-[2.5]" />
+              <span className="hidden sm:inline">Menu Navigasi</span>
+            </button>
+
+            {/* Role Switcher Pill */}
+            <div className="hidden lg:flex items-center gap-1 bg-sky-700/80 border border-sky-400/40 p-1 rounded-xl text-xs">
+              {(['siswa', 'guru', 'admin'] as const).map((r) => (
+                <button
+                  key={r}
+                  onClick={() => handleRoleChange(r)}
+                  className={`px-2.5 py-1 rounded-lg capitalize font-bold transition-all ${
+                    currentUser.role === r
+                      ? 'bg-white text-sky-700 shadow-sm'
+                      : 'text-sky-100 hover:text-white'
+                  }`}
+                >
+                  {r}
+                </button>
+              ))}
+            </div>
+
+            {/* Sound Toggle */}
+            <button
+              onClick={toggleSound}
+              title={isSoundMuted ? 'Nyalakan Audio SFX' : 'Bisukan Audio SFX'}
+              className="p-2 rounded-xl bg-sky-700 hover:bg-sky-500 text-white transition-colors border border-sky-400/50"
+            >
+              {isSoundMuted ? <VolumeX size={17} /> : <Volume2 size={17} />}
+            </button>
+
+            {/* Font Size Accessibility */}
+            <button
+              onClick={() => setFontSize(fontSize === 'normal' ? 'large' : 'normal')}
+              title="Ubah Ukuran Huruf (Aksesibilitas)"
+              className="px-2.5 py-1.5 rounded-xl bg-sky-700 hover:bg-sky-500 text-xs font-bold text-amber-300 border border-sky-400/50 transition-colors hidden xl:block"
+            >
+              {fontSize === 'normal' ? 'A+' : 'A-'}
+            </button>
+
+            {/* AI Tutor Floating Trigger */}
+            <button
+              onClick={() => {
+                setIsAiTutorOpen(true);
+                sound.playClick();
+              }}
+              className="flex items-center gap-1.5 px-2.5 md:px-3 py-1.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-sky-950 font-black text-xs rounded-xl shadow-md transition-all transform hover:scale-105 active:scale-95 border border-amber-300"
+            >
+              <Bot size={16} />
+              <span className="hidden md:inline">Tutor Garuda</span>
+              <span className="md:hidden">AI</span>
+            </button>
+
+            {/* Current User Avatar */}
+            <div
+              onClick={() => {
+                setActiveMenu('profil');
+                sound.playClick();
+              }}
+              className="flex items-center gap-1.5 md:gap-2 cursor-pointer bg-sky-700/90 hover:bg-sky-700 border border-sky-400/60 px-2.5 py-1.5 rounded-xl transition-all shadow-sm"
+            >
+              <span className="text-base md:text-lg">{currentUser.avatar}</span>
+              <div className="hidden xl:block text-left text-xs">
+                <div className="font-bold text-white leading-tight truncate max-w-[100px]">
+                  {currentUser.name}
+                </div>
+                <div className="text-[10px] text-amber-300 font-semibold">
+                  {currentUser.points} Poin
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop Secondary Horizontal Navigation Bar in Sky Blue */}
+        <div className="hidden md:block bg-sky-700 border-t border-sky-500/70 overflow-x-auto">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-1 py-1.5 whitespace-nowrap">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeMenu === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setActiveMenu(item.id);
+                    setSelectedMaterial(null);
+                    sound.playClick();
+                  }}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    isActive
+                      ? 'bg-white text-sky-800 font-extrabold shadow-sm'
+                      : 'text-sky-100 hover:text-white hover:bg-sky-600'
+                  }`}
+                >
+                  <Icon size={14} />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Modal / Slide-Over Drawer Navigasi Pengunjung (Garis Tiga) */}
+        {isNavDrawerOpen && (
+          <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex justify-start animate-fade-in">
+            <div className="bg-white text-slate-800 w-full max-w-md h-full flex flex-col shadow-2xl overflow-hidden border-r border-sky-200">
+              {/* Drawer Header with Logo and Close */}
+              <div className="bg-sky-600 text-white p-5 border-b border-sky-500 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-white p-1 shadow-md flex items-center justify-center">
+                    <img
+                      src="/assets/aistudio/Logo_Pembelajaran_Interaktif_Pendidikan_Pancasila__1__a1b85239.png"
+                      alt="Logo Ruang Pendidikan Pancasila"
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-base text-white">Menu Navigasi Pengunjung</h3>
+                    <p className="text-xs text-sky-100 font-medium">SMA Negeri 1 Mande (SMANDE)</p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setIsNavDrawerOpen(false)}
+                  className="p-2 rounded-xl bg-sky-700 hover:bg-sky-500 text-white transition-colors"
+                  title="Tutup Menu"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Mode Pengunjung Banner */}
+              <div className="bg-sky-50 p-3.5 border-b border-sky-100 flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="font-bold text-sky-900">Mode Pengunjung Aktif</span>
+                </div>
+                <div className="flex gap-1">
+                  {(['siswa', 'guru', 'admin'] as const).map((r) => (
+                    <button
+                      key={r}
+                      onClick={() => handleRoleChange(r)}
+                      className={`px-2 py-0.5 rounded capitalize font-bold text-[11px] ${
+                        currentUser.role === r ? 'bg-sky-600 text-white' : 'bg-white text-slate-600 border border-sky-200'
+                      }`}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* All 15 Menus in Drawer */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                <div className="text-[11px] font-extrabold uppercase tracking-wider text-sky-800 mb-2">
+                  Pilih Halaman / Fitur Pembelajaran:
+                </div>
+                {navItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activeMenu === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        setActiveMenu(item.id);
+                        setSelectedMaterial(null);
+                        setIsNavDrawerOpen(false);
+                        sound.playClick();
+                      }}
+                      className={`w-full flex items-start gap-3 p-3 rounded-2xl transition-all text-left border ${
+                        isActive
+                          ? 'bg-sky-600 text-white border-sky-500 shadow-md'
+                          : 'bg-white hover:bg-sky-50 text-slate-800 border-sky-100 hover:border-sky-300'
+                      }`}
+                    >
+                      <div
+                        className={`p-2.5 rounded-xl shrink-0 ${
+                          isActive ? 'bg-white/20 text-white' : 'bg-sky-100 text-sky-700'
+                        }`}
+                      >
+                        <Icon size={18} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-sm leading-snug">{item.label}</span>
+                          <span
+                            className={`text-[10px] px-2 py-0.2 rounded-full font-bold ${
+                              isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+                            }`}
+                          >
+                            {item.category}
+                          </span>
+                        </div>
+                        <p
+                          className={`text-xs mt-0.5 line-clamp-1 ${
+                            isActive ? 'text-sky-100' : 'text-slate-500'
+                          }`}
+                        >
+                          {item.desc}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Drawer Footer */}
+              <div className="p-4 bg-sky-50 border-t border-sky-100 text-xs text-center text-slate-500">
+                © 2026 SMA Negeri 1 Mande (SMANDE) • Cianjur, Jawa Barat
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Mobile Dropdown Menu */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden bg-sky-700 border-t border-sky-500 px-4 py-3 space-y-1 shadow-2xl max-h-[75vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-2 mb-2 border-b border-sky-600">
+              <span className="text-xs text-sky-200">Peran Pengguna:</span>
+              <div className="flex gap-1 text-xs">
+                {(['siswa', 'guru', 'admin'] as const).map((r) => (
+                  <button
+                    key={r}
+                    onClick={() => handleRoleChange(r)}
+                    className={`px-2 py-0.5 rounded capitalize font-bold ${
+                      currentUser.role === r ? 'bg-white text-sky-800' : 'text-sky-200'
+                    }`}
+                  >
+                    {r}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeMenu === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setActiveMenu(item.id);
+                    setSelectedMaterial(null);
+                    setIsMobileMenuOpen(false);
+                    sound.playClick();
+                  }}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left ${
+                    isActive ? 'bg-white text-sky-800' : 'text-sky-100 hover:bg-sky-600'
+                  }`}
+                >
+                  <Icon size={16} />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </header>
+
+      {/* 2. Running Teks Marquee Banner */}
+      <div className="bg-gradient-to-r from-sky-500 via-sky-400 to-sky-500 border-b border-sky-300 text-sky-950 py-2.5 px-4 shadow-sm overflow-hidden flex items-center">
+        <div className="flex items-center gap-1.5 font-black text-xs uppercase tracking-wider shrink-0 mr-4 bg-sky-700 text-white px-3 py-1 rounded-full shadow-sm">
+          <Megaphone size={14} className="text-amber-300" />
+          <span>INFO TERKINI</span>
+        </div>
+        <div className="overflow-hidden whitespace-nowrap w-full">
+          <div className="animate-marquee font-extrabold tracking-wider text-xs md:text-sm text-sky-950">
+            <span className="mx-6 text-sky-950">
+              SELAMAT DATANG DI PEMBELAJARAN INTERAKTIF PENDIDIKAN PANCASILA
+            </span>
+            <span className="mx-2 text-sky-800">★</span>
+            <span className="mx-6 font-bold text-sky-900">SMA NEGERI 1 MANDE (SMANDE)</span>
+            <span className="mx-2 text-sky-800">★</span>
+            <span className="mx-6 text-sky-950">
+              SELAMAT DATANG DI PEMBELAJARAN INTERAKTIF PENDIDIKAN PANCASILA
+            </span>
+            <span className="mx-2 text-sky-800">★</span>
+            <span className="mx-6 font-bold text-sky-900">SMA NEGERI 1 MANDE (SMANDE)</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Container Content */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
+        {/* ================= 1. BERANDA ================= */}
+        {activeMenu === 'beranda' && (
+          <div className="space-y-8 animate-fade-in">
+            {/* Hero Welcome Banner in Sky Blue theme */}
+            <div className="bg-gradient-to-br from-sky-600 via-sky-500 to-blue-600 text-white rounded-3xl p-6 md:p-10 shadow-xl shadow-sky-600/15 relative overflow-hidden">
+              <div className="max-w-3xl space-y-4 relative z-10">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 text-white text-xs font-bold">
+                  <span>🇮🇩 Selamat Datang di Portal Pembelajaran Pancasila SMA Negeri 1 Mande</span>
+                </div>
+
+                <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight leading-tight">
+                  Tumbuh Menjadi Pelajar Berkarakter, Bernalar Kritis & Berjiwa Pancasila
+                </h1>
+
+                <p className="text-sm md:text-base text-sky-50 leading-relaxed max-w-2xl font-medium">
+                  Platform pembelajaran interaktif Kurikulum Merdeka Fase E & F di <b>SMA Negeri 1 Mande (SMANDE)</b>. Dilengkapi materi berbasis HOTS, 5 game edukasi, kuis penilaian otomatis, simulasi demokrasi, serta asisten AI Tutor Pintar Garuda.
+                </p>
+
+                <div className="flex flex-wrap items-center gap-3 pt-2">
+                  <button
+                    onClick={() => {
+                      setActiveMenu('materi');
+                      sound.playClick();
+                    }}
+                    className="flex items-center gap-2 px-6 py-3 bg-white hover:bg-sky-50 text-sky-700 font-extrabold text-xs md:text-sm rounded-xl shadow-lg transition-all transform hover:scale-105 active:scale-95"
+                  >
+                    <span>Mulai Belajar Materi</span>
+                    <ArrowRight size={16} />
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setActiveMenu('game');
+                      sound.playClick();
+                    }}
+                    className="flex items-center gap-2 px-6 py-3 bg-sky-700/80 hover:bg-sky-700 border border-sky-400 text-white font-bold text-xs md:text-sm rounded-xl transition-all"
+                  >
+                    <Gamepad2 size={16} className="text-amber-300" />
+                    <span>Mainkan Game Edukasi</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setActiveMenu('simulasi');
+                      sound.playClick();
+                    }}
+                    className="flex items-center gap-2 px-5 py-3 bg-amber-400 hover:bg-amber-300 text-sky-950 font-bold text-xs md:text-sm rounded-xl shadow-md transition-all"
+                  >
+                    <Vote size={16} />
+                    <span>Simulasi Pemilu & Sidang</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Background decorative emblem */}
+              <div className="absolute -right-6 -bottom-6 text-[180px] md:text-[240px] opacity-15 pointer-events-none select-none">
+                🦅
+              </div>
+            </div>
+
+            {/* Sambutan & Profil Guru Pengampu */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+              <div className="md:col-span-8 bg-white border border-sky-200/80 rounded-3xl p-6 shadow-md shadow-sky-100/50 flex flex-col md:flex-row gap-6 items-center">
+                <div className="w-24 h-24 md:w-32 md:h-32 rounded-3xl bg-gradient-to-tr from-sky-100 to-sky-200 border-2 border-sky-300 flex items-center justify-center text-5xl shadow-md shrink-0">
+                  👨‍🏫
+                </div>
+                <div className="space-y-2 text-center md:text-left">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-sky-700">
+                    Sambutan Guru Pengampu Mata Pelajaran
+                  </span>
+                  <h3 className="text-xl font-bold text-slate-800">Munawar Rois, S.Pd.</h3>
+                  <p className="text-xs text-sky-600 font-semibold">
+                    Guru Pendidikan Pancasila SMA Negeri 1 Mande (SMANDE)
+                  </p>
+                  <p className="text-xs md:text-sm text-slate-600 italic leading-relaxed pt-1">
+                    "Pendidikan Pancasila bukan sekadar menghafal butir-butir sila dan pasal konstitusi. Inti hakikinya adalah bagaimana nilai ketuhanan, kemanusiaan, persatuan, musyawarah, dan keadilan sosial tersebut hidup dan mewujud dalam setiap langkah nyata siswa-siswi SMA Negeri 1 Mande di sekolah, keluarga, dan masyarakat luas."
+                  </p>
+                </div>
+              </div>
+
+              {/* Quick Learning Stats */}
+              <div className="md:col-span-4 bg-white border border-sky-200/80 rounded-3xl p-6 shadow-md shadow-sky-100/50 flex flex-col justify-between">
+                <h4 className="font-bold text-sm text-sky-900 flex items-center gap-2 mb-3">
+                  <Sparkles size={16} className="text-amber-500" /> Statistik Pembelajaran SMANDE
+                </h4>
+                <div className="space-y-2.5 text-xs text-slate-700">
+                  <div className="flex justify-between p-2.5 bg-sky-50 rounded-xl border border-sky-100">
+                    <span>Modul Materi Kurikulum</span>
+                    <span className="font-bold text-sky-800">Fase E & F (X, XI, XII)</span>
+                  </div>
+                  <div className="flex justify-between p-2.5 bg-sky-50 rounded-xl border border-sky-100">
+                    <span>Bank Soal Asesmen</span>
+                    <span className="font-bold text-amber-600">{questionsBank.length} Butir HOTS</span>
+                  </div>
+                  <div className="flex justify-between p-2.5 bg-sky-50 rounded-xl border border-sky-100">
+                    <span>Mode Game Interaktif</span>
+                    <span className="font-bold text-emerald-600">5 Game Edukatif</span>
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-sky-100 text-[11px] text-slate-500 text-center font-medium">
+                  Terintegrasi KKTP & 6 Dimensi Profil Pelajar Pancasila
+                </div>
+              </div>
+            </div>
+
+            {/* Kartu Kelas X, XI, dan XII */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-xl font-bold text-slate-800">Pilih Jenjang Pembelajaran</h3>
+                  <p className="text-xs text-slate-500">Materi disesuaikan dengan Capaian Pembelajaran Fase E & Fase F</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                {[
+                  {
+                    grade: 'X' as GradeLevel,
+                    fase: 'Fase E',
+                    title: 'Kelas X (Sepuluh)',
+                    desc: 'Ide Pendiri Bangsa, Piagam Jakarta, Hierarki Norma & UUD 1945, Bhinneka Tunggal Ika, dan NKRI.',
+                    badgeColor: 'border-sky-300 bg-sky-100 text-sky-800',
+                  },
+                  {
+                    grade: 'XI' as GradeLevel,
+                    fase: 'Fase F',
+                    title: 'Kelas XI (Sebelas)',
+                    desc: 'Kedudukan Pancasila (Meja Statis & Leitstar Dinamis), Demokrasi Konstitusional, Musyawarah, dan Harmonisasi HAM.',
+                    badgeColor: 'border-blue-300 bg-blue-100 text-blue-800',
+                  },
+                  {
+                    grade: 'XII' as GradeLevel,
+                    fase: 'Fase F',
+                    title: 'Kelas XII (Dua Belas)',
+                    desc: 'Penyelenggaraan Negara yang Bersih, Integritas Antikorupsi KPK, Etika Digital & Literasi Menangkal Hoaks.',
+                    badgeColor: 'border-amber-300 bg-amber-100 text-amber-900',
+                  },
+                ].map((k) => (
+                  <div
+                    key={k.grade}
+                    onClick={() => {
+                      setSelectedGrade(k.grade);
+                      setActiveMenu('materi');
+                      sound.playClick();
+                    }}
+                    className="bg-white hover:bg-sky-50/60 border border-sky-200 hover:border-sky-400 rounded-3xl p-6 cursor-pointer transition-all shadow-md shadow-sky-100/50 hover:shadow-lg group flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${k.badgeColor}`}>
+                          {k.fase}
+                        </span>
+                        <GraduationCap size={20} className="text-sky-500 group-hover:scale-110 transition-transform" />
+                      </div>
+                      <h4 className="text-lg font-bold text-slate-800 mb-2 group-hover:text-sky-600 transition-colors">
+                        {k.title}
+                      </h4>
+                      <p className="text-xs text-slate-600 leading-relaxed mb-6">{k.desc}</p>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-4 border-t border-sky-100 text-xs font-bold text-sky-600 group-hover:text-sky-700">
+                      <span>Buka Modul Kelas {k.grade}</span>
+                      <ChevronRight size={16} className="transform group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Game Unggulan Preview & Pengumuman Terbaru */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* Left: Featured Game */}
+              <div className="lg:col-span-7 bg-white border border-sky-200/80 rounded-3xl p-6 shadow-md shadow-sky-100/50 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs uppercase tracking-wider text-sky-700 font-bold flex items-center gap-1.5">
+                      <Gamepad2 size={14} /> Game Edukasi Unggulan
+                    </span>
+                    <span className="text-[11px] bg-sky-100 text-sky-800 border border-sky-200 px-2.5 py-0.5 rounded-full font-semibold">
+                      5 Level Tantangan
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-800 mb-2">Petualangan Siswa Pancasila (2D Platformer)</h3>
+                  <p className="text-xs text-slate-600 leading-relaxed mb-4">
+                    Gerakkan karakter siswa, kumpulkan bintang kearifan moral, lompati rintangan permasalahan sosial (hoaks dan intoleransi), dan jawab pos ujian materi di setiap bab pembelajaran!
+                  </p>
+                </div>
+
+                <div className="bg-sky-50 p-4 rounded-2xl border border-sky-100 flex items-center justify-between gap-4">
+                  <div className="text-xs text-slate-600 font-medium">
+                    Tersedia kontrol keyboard PC & tombol sentuh virtual HP
+                  </div>
+                  <button
+                    onClick={() => {
+                      setActiveMenu('game');
+                      setActiveGameTab('platformer');
+                      sound.playClick();
+                    }}
+                    className="px-4 py-2 bg-sky-600 hover:bg-sky-500 font-bold text-xs text-white rounded-xl shadow-md shrink-0 transition-all"
+                  >
+                    Mainkan Sekarang 🎮
+                  </button>
+                </div>
+              </div>
+
+              {/* Right: Pengumuman Terbaru */}
+              <div className="lg:col-span-5 bg-white border border-sky-200/80 rounded-3xl p-6 shadow-md shadow-sky-100/50">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-bold text-sm text-slate-800 flex items-center gap-1.5">
+                    📢 Informasi & Agenda Terbaru
+                  </h4>
+                  <button
+                    onClick={() => setActiveMenu('agenda')}
+                    className="text-xs text-sky-600 hover:underline font-semibold"
+                  >
+                    Semua Agenda
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {initialAnnouncements.slice(0, 2).map((ann) => (
+                    <div key={ann.id} className="bg-sky-50 border border-sky-100 p-3.5 rounded-2xl text-xs">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-bold text-sky-800">{ann.category}</span>
+                        <span className="text-[10px] text-slate-500">{ann.date}</span>
+                      </div>
+                      <h5 className="font-semibold text-slate-800 mb-1 line-clamp-1">{ann.title}</h5>
+                      <p className="text-slate-600 text-[11px] line-clamp-2">{ann.content}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================= 2. MATERI PEMBELAJARAN ================= */}
+        {activeMenu === 'materi' && (
+          <div className="space-y-6 animate-fade-in">
+            {selectedMaterial ? (
+              <div>
+                <button
+                  onClick={() => setSelectedMaterial(null)}
+                  className="mb-4 inline-flex items-center gap-1.5 text-xs font-bold text-sky-700 hover:text-sky-900 transition-colors"
+                >
+                  ← Kembali ke Daftar Modul Kelas {selectedGrade}
+                </button>
+                <MaterialDetailView
+                  material={selectedMaterial}
+                  onTakeQuiz={handleStartMaterialQuiz}
+                  onNextMaterial={() => {
+                    const gradeMats = materialsData.filter((m) => m.grade === selectedGrade);
+                    const idx = gradeMats.findIndex((m) => m.id === selectedMaterial.id);
+                    if (idx < gradeMats.length - 1) {
+                      setSelectedMaterial(gradeMats[idx + 1]);
+                    }
+                  }}
+                  onPrevMaterial={() => {
+                    const gradeMats = materialsData.filter((m) => m.grade === selectedGrade);
+                    const idx = gradeMats.findIndex((m) => m.id === selectedMaterial.id);
+                    if (idx > 0) {
+                      setSelectedMaterial(gradeMats[idx - 1]);
+                    }
+                  }}
+                  onCompleteMaterial={(matId) => {
+                    setCurrentUser((prev) => ({
+                      ...prev,
+                      completedMaterials: Array.from(new Set([...prev.completedMaterials, matId])),
+                      points: prev.points + 50,
+                    }));
+                  }}
+                />
+              </div>
+            ) : (
+              <div>
+                {/* Header & Grade Selector */}
+                <div className="bg-white border border-sky-200 rounded-3xl p-6 md:p-8 shadow-md flex flex-wrap items-center justify-between gap-4 mb-6">
+                  <div>
+                    <span className="text-xs uppercase tracking-wider text-sky-700 font-bold">
+                      Kurikulum Merdeka Belajar • SMANDE
+                    </span>
+                    <h2 className="text-2xl font-black text-slate-800">Materi Pembelajaran Pendidikan Pancasila</h2>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Pilih jenjang kelas untuk menelaah bab, infografis, video, kasus, dan LKPD digital.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 bg-sky-50 p-1.5 rounded-2xl border border-sky-200">
+                    {(['X', 'XI', 'XII'] as const).map((g) => (
+                      <button
+                        key={g}
+                        onClick={() => {
+                          setSelectedGrade(g);
+                          sound.playClick();
+                        }}
+                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                          selectedGrade === g
+                            ? 'bg-sky-600 text-white shadow-md'
+                            : 'text-slate-600 hover:text-sky-700'
+                        }`}
+                      >
+                        Kelas {g}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Materials Cards for selected grade */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  {materialsData
+                    .filter((m) => m.grade === selectedGrade)
+                    .map((mat) => (
+                      <div
+                        key={mat.id}
+                        className="bg-white border border-sky-100 hover:border-sky-300 rounded-3xl p-6 shadow-md flex flex-col justify-between group transition-all"
+                      >
+                        <div>
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-xs font-bold text-sky-700 bg-sky-50 border border-sky-200 px-2.5 py-0.5 rounded-full">
+                              Bab {mat.chapterNumber}
+                            </span>
+                            <div className="flex items-center gap-2 text-xs text-slate-500">
+                              <Clock size={13} />
+                              <span>{mat.durationMinutes} Menit</span>
+                            </div>
+                          </div>
+
+                          <h3 className="text-lg font-bold text-slate-800 mb-2 leading-snug group-hover:text-sky-600 transition-colors">
+                            {mat.title}
+                          </h3>
+                          <p className="text-xs text-slate-600 leading-relaxed mb-4 line-clamp-2">
+                            {mat.subtitle}
+                          </p>
+
+                          <div className="space-y-1.5 bg-sky-50/70 p-3 rounded-xl border border-sky-100 mb-5">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                              Capaian Pembelajaran:
+                            </span>
+                            <p className="text-xs text-slate-700 line-clamp-2">
+                              {mat.learningObjectives[0]}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-4 border-t border-sky-100">
+                          <button
+                            onClick={() => {
+                              setSelectedMaterial(mat);
+                              sound.playClick();
+                            }}
+                            className="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs rounded-xl shadow-md transition-all"
+                          >
+                            Buka Materi Lengkap 📖
+                          </button>
+
+                          <button
+                            onClick={() => handleStartMaterialQuiz(mat.relatedQuizId)}
+                            className="px-3 py-2 bg-sky-50 hover:bg-sky-100 text-sky-800 text-xs font-semibold rounded-xl border border-sky-200 transition-colors"
+                          >
+                            Kuis Uji Pemahaman ⚡
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ================= 3. VIDEO PEMBELAJARAN ================= */}
+        {activeMenu === 'video' && (
+          <div className="space-y-6 animate-fade-in">
+            <div className="bg-white border border-sky-200 rounded-3xl p-6 md:p-8 shadow-md">
+              <span className="text-xs uppercase tracking-wider text-sky-700 font-bold flex items-center gap-1.5 mb-1">
+                <Play size={14} /> Media Audiovisual Edukatif
+              </span>
+              <h2 className="text-2xl font-black text-slate-800">Video Penjelasan & Animasi Studi Kasus</h2>
+              <p className="text-xs text-slate-500 mt-1">
+                Simak tayangan video pembelajaran berkualitas untuk memperdalam wawasan kebangsaan dan konstitusi di SMA Negeri 1 Mande.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {materialsData.map((m) => (
+                <div
+                  key={m.id}
+                  onClick={() => {
+                    setSelectedMaterial(m);
+                    setActiveMenu('materi');
+                    sound.playClick();
+                  }}
+                  className="bg-white border border-sky-100 hover:border-sky-300 rounded-3xl overflow-hidden shadow-md cursor-pointer group transition-all"
+                >
+                  <div className="relative aspect-video bg-sky-950 overflow-hidden">
+                    <img
+                      src={m.video.thumbnail}
+                      alt={m.video.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80"
+                    />
+                    <div className="absolute inset-0 bg-sky-950/30 flex items-center justify-center">
+                      <div className="w-12 h-12 rounded-full bg-sky-600 text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                        <Play size={20} className="ml-1" />
+                      </div>
+                    </div>
+                    <span className="absolute bottom-2 right-2 bg-slate-900/80 px-2 py-0.5 rounded text-[11px] text-white font-mono">
+                      {m.video.duration}
+                    </span>
+                  </div>
+
+                  <div className="p-5">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-sky-700 block mb-1">
+                      Kelas {m.grade} • Bab {m.chapterNumber}
+                    </span>
+                    <h4 className="font-bold text-sm text-slate-800 mb-2 line-clamp-1 group-hover:text-sky-600 transition-colors">
+                      {m.video.title}
+                    </h4>
+                    <p className="text-xs text-slate-500 line-clamp-2">{m.video.summary}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ================= 4. GAME EDUKASI (5 LENGKAP) ================= */}
+        {activeMenu === 'game' && (
+          <div className="space-y-6 animate-fade-in">
+            {/* Game Category Navigation */}
+            <div className="bg-white border border-sky-200 rounded-3xl p-6 shadow-md flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <span className="text-xs uppercase tracking-wider text-sky-700 font-bold flex items-center gap-1.5">
+                  <Gamepad2 size={15} /> Gamifikasi Belajar Aktif
+                </span>
+                <h2 className="text-2xl font-black text-slate-800">5 Mode Game Edukasi Pancasila</h2>
+                <p className="text-xs text-slate-500">Pilih mode permainan favoritmu untuk belajar sambil berpetualang.</p>
+              </div>
+
+              {/* Game Sub-tabs */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full">
+                {[
+                  { id: 'platformer', label: '1. Petualangan 2D' },
+                  { id: 'speed', label: '2. Kuis Kilat' },
+                  { id: 'detective', label: '3. Detektif Moral' },
+                  { id: 'pemilu', label: '4. Simulasi Pemilu' },
+                  { id: 'puzzle', label: '5. Puzzle Hierarki' },
+                ].map((g) => (
+                  <button
+                    key={g.id}
+                    onClick={() => {
+                      setActiveGameTab(g.id as any);
+                      sound.playClick();
+                    }}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                      activeGameTab === g.id
+                        ? 'bg-sky-600 text-white shadow-md'
+                        : 'bg-sky-50 text-slate-600 hover:text-sky-800 border border-sky-100'
+                    }`}
+                  >
+                    {g.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Selected Game Rendering */}
+            {activeGameTab === 'platformer' && (
+              <PancasilaPlatformer
+                onCompleteScore={(pts) =>
+                  setCurrentUser((p) => ({
+                    ...p,
+                    points: p.points + pts,
+                    badges: Array.from(new Set([...p.badges, 'badge-nusantara'])),
+                  }))
+                }
+              />
+            )}
+
+            {activeGameTab === 'speed' && (
+              <SpeedQuizGame
+                onScoreEarned={(pts) =>
+                  setCurrentUser((p) => ({
+                    ...p,
+                    points: p.points + pts,
+                    badges: Array.from(new Set([...p.badges, 'badge-kilat'])),
+                  }))
+                }
+              />
+            )}
+
+            {activeGameTab === 'detective' && (
+              <DetectiveGame
+                onCaseSolved={(pts) =>
+                  setCurrentUser((p) => ({
+                    ...p,
+                    points: p.points + pts,
+                    badges: Array.from(new Set([...p.badges, 'badge-detektif'])),
+                  }))
+                }
+              />
+            )}
+
+            {activeGameTab === 'pemilu' && (
+              <ElectionSimGame
+                onVoteSubmitted={(pts) =>
+                  setCurrentUser((p) => ({
+                    ...p,
+                    points: p.points + pts,
+                    badges: Array.from(new Set([...p.badges, 'badge-demokrasi'])),
+                  }))
+                }
+              />
+            )}
+
+            {activeGameTab === 'puzzle' && (
+              <PancasilaPuzzleGame
+                onCompleted={(pts) =>
+                  setCurrentUser((p) => ({
+                    ...p,
+                    points: p.points + pts,
+                    badges: Array.from(new Set([...p.badges, 'badge-konstitusi'])),
+                  }))
+                }
+              />
+            )}
+          </div>
+        )}
+
+        {/* ================= 5. KUIS INTERAKTIF ================= */}
+        {activeMenu === 'kuis' && (
+          <div className="space-y-6 animate-fade-in">
+            <QuizEngine
+              questions={activeQuizQuestions || questionsBank}
+              quizTitle={activeQuizTitle || 'Asesmen Komprehensif Pendidikan Pancasila SMANDE'}
+              studentName={currentUser.name}
+              studentClass={currentUser.className || 'XI-1'}
+              onFinishQuiz={handleQuizFinish}
+              onBackToMaterials={() => {
+                setActiveMenu('materi');
+                setSelectedMaterial(null);
+              }}
+            />
+          </div>
+        )}
+
+        {/* ================= 6. BANK SOAL ================= */}
+        {activeMenu === 'bankSoal' && (
+          <div className="space-y-6 animate-fade-in">
+            <div className="bg-white border border-sky-200 rounded-3xl p-6 md:p-8 shadow-md flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <span className="text-xs uppercase tracking-wider text-sky-700 font-bold flex items-center gap-1.5 mb-1">
+                  <Brain size={15} /> Gudang Soal & Latihan
+                </span>
+                <h2 className="text-2xl font-black text-slate-800">Bank Soal HOTS Kelas X, XI, XII</h2>
+                <p className="text-xs text-slate-500">
+                  Latihan soal terstruktur berdasarkan bab, tingkat kesulitan, dan 7 jenis tipe soal interaktif di SMA Negeri 1 Mande.
+                </p>
+              </div>
+
+              <button
+                onClick={() => {
+                  setActiveQuizQuestions(questionsBank);
+                  setActiveQuizTitle('Asesmen Mandiri Bank Soal SMANDE');
+                  setActiveMenu('kuis');
+                  sound.playClick();
+                }}
+                className="px-5 py-2.5 bg-sky-600 hover:bg-sky-500 font-bold text-xs text-white rounded-xl shadow-md transition-all"
+              >
+                Kerjakan Seluruh Bank Soal ✍️
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {questionsBank.map((q, idx) => (
+                <div key={q.id} className="bg-white border border-sky-100 p-5 rounded-2xl shadow-sm space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-sky-700">
+                      Soal #{idx + 1} • Kelas {q.grade}
+                    </span>
+                    <span className="text-[10px] bg-sky-50 text-sky-800 border border-sky-200 px-2 py-0.5 rounded-full uppercase font-bold">
+                      {q.difficulty}
+                    </span>
+                  </div>
+                  <h4 className="font-semibold text-sm text-slate-800 leading-snug">{q.prompt}</h4>
+                  <div className="text-xs text-slate-500 pt-2 border-t border-sky-100">
+                    <span className="text-sky-600 font-bold">Kategori:</span> {q.type.replace('_', ' ')}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ================= 7. KOMPETISI, LENCANA & SERTIFIKAT ================= */}
+        {(activeMenu === 'kompetisi' || activeMenu === 'profil') && (
+          <ProfileAndCompetitionsView user={currentUser} />
+        )}
+
+        {/* ================= 8. SIMULASI DEMOKRASI ================= */}
+        {activeMenu === 'simulasi' && (
+          <SimulationsView
+            onBadgeEarned={(badgeTitle) => {
+              setCurrentUser((p) => ({
+                ...p,
+                points: p.points + 100,
+                badges: Array.from(new Set([...p.badges, 'badge-demokrasi'])),
+              }));
+            }}
+          />
+        )}
+
+        {/* ================= 9. PETA NUSANTARA ================= */}
+        {activeMenu === 'nusantara' && (
+          <NusantaraInteractiveMap />
+        )}
+
+        {/* ================= 10. E-LIBRARY ================= */}
+        {activeMenu === 'elibrary' && (
+          <ELibraryView />
+        )}
+
+        {/* ================= 11. FORUM DISKUSI ================= */}
+        {activeMenu === 'forum' && (
+          <ForumDiscussionView
+            currentUserRole={currentUser.role}
+            currentUserName={currentUser.name}
+          />
+        )}
+
+        {/* ================= 12. AGENDA & TUGAS ================= */}
+        {activeMenu === 'agenda' && (
+          <div className="space-y-6 animate-fade-in">
+            <div className="bg-white border border-sky-200 rounded-3xl p-6 md:p-8 shadow-md">
+              <span className="text-xs uppercase tracking-wider text-sky-700 font-bold flex items-center gap-1.5 mb-1">
+                <Calendar size={15} /> Kalender Akademik & Agenda Belajar
+              </span>
+              <h2 className="text-2xl font-black text-slate-800">Agenda Pembelajaran SMA Negeri 1 Mande</h2>
+              <p className="text-xs text-slate-500">Jadwal Asesmen, Tugas LKPD, dan Peringatan Hari Bersejarah Nasional.</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="bg-white border border-sky-100 p-6 rounded-3xl shadow-sm space-y-4">
+                <h4 className="font-bold text-sm text-slate-800">Jadwal Tugas & Asesmen Terdekat:</h4>
+                <div className="space-y-3">
+                  {initialAnnouncements.map((a) => (
+                    <div key={a.id} className="bg-sky-50/70 p-4 rounded-2xl border border-sky-100 text-xs">
+                      <div className="flex justify-between font-bold text-sky-800 mb-1">
+                        <span>{a.category}</span>
+                        <span className="text-slate-500">{a.date}</span>
+                      </div>
+                      <h5 className="font-bold text-slate-800 mb-1">{a.title}</h5>
+                      <p className="text-slate-600">{a.content}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-white border border-sky-100 p-6 rounded-3xl shadow-sm space-y-4">
+                <h4 className="font-bold text-sm text-slate-800">Peringatan Hari Bersejarah Nasional:</h4>
+                <div className="space-y-2.5 text-xs text-slate-700">
+                  <div className="p-3 bg-sky-50 rounded-xl border border-sky-100 flex justify-between">
+                    <span className="font-semibold text-slate-800">1 Juni</span>
+                    <span className="text-sky-700 font-bold">Hari Lahir Pancasila</span>
+                  </div>
+                  <div className="p-3 bg-sky-50 rounded-xl border border-sky-100 flex justify-between">
+                    <span className="font-semibold text-slate-800">17 Agustus</span>
+                    <span className="text-red-600 font-bold">Hari Kemerdekaan RI</span>
+                  </div>
+                  <div className="p-3 bg-sky-50 rounded-xl border border-sky-100 flex justify-between">
+                    <span className="font-semibold text-slate-800">18 Agustus</span>
+                    <span className="text-emerald-700 font-bold">Hari Konstitusi Republik Indonesia</span>
+                  </div>
+                  <div className="p-3 bg-sky-50 rounded-xl border border-sky-100 flex justify-between">
+                    <span className="font-semibold text-slate-800">1 Oktober</span>
+                    <span className="text-amber-700 font-bold">Hari Kesaktian Pancasila</span>
+                  </div>
+                  <div className="p-3 bg-sky-50 rounded-xl border border-sky-100 flex justify-between">
+                    <span className="font-semibold text-slate-800">28 Oktober</span>
+                    <span className="text-blue-700 font-bold">Hari Sumpah Pemuda</span>
+                  </div>
+                  <div className="p-3 bg-sky-50 rounded-xl border border-sky-100 flex justify-between">
+                    <span className="font-semibold text-slate-800">10 November</span>
+                    <span className="text-red-700 font-bold">Hari Pahlawan Nasional</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================= 13. DASHBOARD GURU ================= */}
+        {activeMenu === 'dashboardGuru' && (
+          <TeacherDashboard />
+        )}
+
+        {/* ================= 15. TENTANG WEBSITE ================= */}
+        {activeMenu === 'tentang' && (
+          <div className="space-y-6 animate-fade-in max-w-4xl mx-auto">
+            <div className="bg-white border border-sky-200 rounded-3xl p-6 md:p-8 shadow-md text-center">
+              <div className="w-20 h-20 mx-auto rounded-2xl bg-white p-2 shadow-md border border-sky-200 mb-3 flex items-center justify-center">
+                <img
+                  src="/assets/aistudio/Logo_Pembelajaran_Interaktif_Pendidikan_Pancasila__1__a1b85239.png"
+                  alt="Logo Ruang Pendidikan Pancasila SMANDE"
+                  className="w-full h-full object-contain"
+                />
+              </div>
+              <h2 className="text-2xl font-black text-slate-800">Website Pendidikan Pancasila Interaktif SMANDE</h2>
+              <p className="text-xs text-sky-700 font-bold mt-1">
+                Platform Media Pembelajaran Mandiri & Terpadu SMA Negeri 1 Mande (Cianjur, Jawa Barat)
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="bg-white border border-sky-100 p-6 rounded-3xl shadow-sm space-y-3">
+                <h4 className="font-bold text-sm text-sky-800">Identitas Sekolah:</h4>
+                <div className="space-y-1.5 text-xs text-slate-700">
+                  <div><b>Nama Sekolah:</b> SMA Negeri 1 Mande (SMANDE)</div>
+                  <div><b>NPSN:</b> 20203875</div>
+                  <div><b>Alamat:</b> Jl. Arya Wiratanudatar KM 8, Mande, Kab. Cianjur, Jawa Barat</div>
+                  <div><b>Kurikulum:</b> Kurikulum Merdeka (Fase E & F)</div>
+                  <div><b>Mata Pelajaran:</b> Pendidikan Pancasila (PPKn)</div>
+                </div>
+              </div>
+
+              <div className="bg-white border border-sky-100 p-6 rounded-3xl shadow-sm space-y-3">
+                <h4 className="font-bold text-sm text-sky-800">Tim Pengembang & Pengampu:</h4>
+                <div className="space-y-1.5 text-xs text-slate-700">
+                  <div><b>Guru Pengampu:</b> Munawar Rois, S.Pd.</div>
+                  <div><b>NIP:</b> 19710815 199802 1 004</div>
+                  <div><b>Email Pembelajaran:</b> munawarrois81@guru.sma.belajar.id</div>
+                  <div><b>Teknologi:</b> React, TypeScript, Tailwind CSS (Nuansa Biru Langit), Web Audio API, Gemini AI SDK</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* Footer in Deep Sky Blue */}
+      <footer className="mt-auto bg-sky-900 border-t border-sky-800 py-8 text-xs text-sky-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-white p-1 flex items-center justify-center shrink-0 shadow-md">
+              <img
+                src="/assets/aistudio/Logo_Pembelajaran_Interaktif_Pendidikan_Pancasila__1__a1b85239.png"
+                alt="Logo SMANDE"
+                className="w-full h-full object-contain"
+              />
+            </div>
+            <div>
+              <div className="font-bold text-white text-sm">
+                Pendidikan Pancasila SMANDE • SMA Negeri 1 Mande
+              </div>
+              <p className="text-[11px] text-sky-300">
+                Membangun Generasi Emas Pelajar Pancasila 2045 yang Beriman, Kritis, Mandiri, dan Berintegritas.
+              </p>
+            </div>
+          </div>
+
+          <div className="text-[11px] text-sky-300">
+            © 2026 SMA Negeri 1 Mande. Selaras Capaian Pembelajaran BSKAP Kemendikbudristek.
+          </div>
+        </div>
+      </footer>
+
+      {/* Floating AI Tutor Dialog */}
+      <AITutorModal
+        isOpen={isAiTutorOpen}
+        onClose={() => setIsAiTutorOpen(false)}
+        studentGrade={`Kelas ${selectedGrade}`}
+      />
+    </div>
+  );
+}
