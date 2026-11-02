@@ -22,6 +22,7 @@ import { ProfileAndCompetitionsView } from './components/ProfileAndCompetitionsV
 import { NusantaraInteractiveMap } from './components/NusantaraInteractiveMap';
 import { AITutorModal } from './components/AITutorModal';
 import { InteractiveVideoPlayer } from './components/InteractiveVideoPlayer';
+import { NavigationWindowFrame } from './components/NavigationWindowFrame';
 
 // Icons
 import {
@@ -54,14 +55,43 @@ import {
 } from 'lucide-react';
 
 export default function App() {
-  // Navigation State
+  // Navigation State with History for Window Frame Back tracking
   const [activeMenu, setActiveMenu] = useState<string>('beranda');
+  const [navigationHistory, setNavigationHistory] = useState<string[]>(['beranda']);
   const [selectedGrade, setSelectedGrade] = useState<GradeLevel>('XI');
   const [selectedMaterial, setSelectedMaterial] = useState<MaterialSection | null>(null);
   const [activeVideoMaterial, setActiveVideoMaterial] = useState<MaterialSection>(materialsData[0]);
   const [videoFilterGrade, setVideoFilterGrade] = useState<'ALL' | GradeLevel>('ALL');
   const [activeQuizQuestions, setActiveQuizQuestions] = useState<Question[] | null>(null);
   const [activeQuizTitle, setActiveQuizTitle] = useState<string>('');
+
+  const handleNavigate = (menuId: string) => {
+    sound.playClick();
+    if (menuId !== activeMenu) {
+      setNavigationHistory((prev) => [...prev, menuId]);
+      setActiveMenu(menuId);
+      setSelectedMaterial(null);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleGoBack = () => {
+    sound.playClick();
+    if (selectedMaterial) {
+      setSelectedMaterial(null);
+      return;
+    }
+    if (navigationHistory.length > 1) {
+      const newHist = [...navigationHistory];
+      newHist.pop(); // remove current
+      const prev = newHist[newHist.length - 1];
+      setNavigationHistory(newHist);
+      setActiveMenu(prev);
+    } else {
+      setActiveMenu('beranda');
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Game sub-tab state
   const [activeGameTab, setActiveGameTab] = useState<'platformer' | 'speed' | 'detective' | 'pemilu' | 'puzzle'>('platformer');
@@ -344,10 +374,8 @@ export default function App() {
                     <button
                       key={item.id}
                       onClick={() => {
-                        setActiveMenu(item.id);
-                        setSelectedMaterial(null);
+                        handleNavigate(item.id);
                         setIsNavDrawerOpen(false);
-                        sound.playClick();
                       }}
                       className={`w-full flex items-start gap-3 p-3 rounded-2xl transition-all text-left border ${
                         isActive
@@ -421,10 +449,8 @@ export default function App() {
                 <button
                   key={item.id}
                   onClick={() => {
-                    setActiveMenu(item.id);
-                    setSelectedMaterial(null);
+                    handleNavigate(item.id);
                     setIsMobileMenuOpen(false);
-                    sound.playClick();
                   }}
                   className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left ${
                     isActive ? 'bg-white text-sky-800' : 'text-sky-100 hover:bg-sky-600'
@@ -462,8 +488,15 @@ export default function App() {
         </div>
       </div>
 
-      {/* Main Container Content */}
+      {/* Main Container Content with Neat Window Frame Navigation */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
+        <NavigationWindowFrame
+          activeMenuId={activeMenu}
+          navItems={navItems}
+          onNavigate={handleNavigate}
+          onGoBack={handleGoBack}
+          canGoBack={navigationHistory.length > 1 || selectedMaterial !== null}
+        >
         {/* ================= 1. BERANDA ================= */}
         {activeMenu === 'beranda' && (
           <div className="space-y-8 animate-fade-in">
@@ -1315,6 +1348,7 @@ export default function App() {
             </div>
           </div>
         )}
+        </NavigationWindowFrame>
       </main>
 
       {/* Footer in Deep Sky Blue */}

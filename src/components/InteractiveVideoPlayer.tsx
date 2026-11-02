@@ -12,16 +12,14 @@ import {
   Sparkles,
   CheckCircle2,
   BookOpen,
-  Award,
-  Layers,
   Film,
   Subtitles,
   Volume,
   ExternalLink,
   ChevronRight,
-  Flame,
   Radio,
-  Share2
+  Share2,
+  Image as ImageIcon
 } from 'lucide-react';
 import { MaterialSection } from '../types';
 
@@ -45,18 +43,19 @@ export const InteractiveVideoPlayer: React.FC<InteractiveVideoPlayerProps> = ({
   const [duration, setDuration] = useState<number>(material.video.durationSec || 180);
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
   const [isMuted, setIsMuted] = useState<boolean>(false);
-  const [volume, setVolume] = useState<number>(0.8);
+  const [volume, setVolume] = useState<number>(0.9);
   const [showSubtitles, setShowSubtitles] = useState<boolean>(true);
   const [isLooping, setIsLooping] = useState<boolean>(true);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [voiceNarrationEnabled, setVoiceNarrationEnabled] = useState<boolean>(false);
   const [activeSceneIndex, setActiveSceneIndex] = useState<number>(0);
+  const [isYouTubeStarted, setIsYouTubeStarted] = useState<boolean>(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<number | null>(null);
   const synthRef = useRef<SpeechSynthesisUtterance | null>(null);
 
-  // Default fallback scenes if not specified
+  // Scenes list from material or default
   const scenes = material.video.scenes && material.video.scenes.length > 0
     ? material.video.scenes
     : [
@@ -65,43 +64,40 @@ export const InteractiveVideoPlayer: React.FC<InteractiveVideoPlayerProps> = ({
           timestamp: '00:00',
           title: `Pengenalan Materi: ${material.title}`,
           speaker: 'Munawar Rois, S.Pd. (Guru Pengampu)',
-          narration: `Selamat datang di video pembelajaran Pendidikan Pancasila SMA Negeri 1 Mande. Bab ini membahas ${material.title}. Perhatikan konsep penting dan amalkan dalam kehidupan sehari-hari.`,
+          narration: `Selamat datang di video pembelajaran Pendidikan Pancasila SMA Negeri 1 Mande. Bab ini membahas ${material.title}.`,
           badge: 'Fase Pembuka',
+          image: material.video.thumbnail,
           highlightWords: ['Pendidikan Pancasila', 'SMANDE', 'Nilai Karakter'],
         },
         {
-          time: 35,
-          timestamp: '00:35',
+          time: 45,
+          timestamp: '00:45',
           title: 'Konsep Kunci & Dasar Filosofis',
-          speaker: 'Bung Karno & Pendiri Bangsa',
+          speaker: 'Pendiri Bangsa',
           narration: material.summary,
           badge: 'Konsep Utama',
+          image: material.video.thumbnail,
           highlightWords: ['Filsafat Bangsa', 'Konsensus Nasional', 'Persatuan'],
         },
         {
-          time: 90,
-          timestamp: '01:30',
+          time: 100,
+          timestamp: '01:40',
           title: 'Analisis Kasus & Penerapan Keseharian',
           speaker: 'Munawar Rois, S.Pd.',
-          narration: `${material.caseStudy.title}. ${material.caseStudy.context} Pelajar SMANDE harus memegang teguh: ${material.caseStudy.moralGuidance}`,
+          narration: `${material.caseStudy.title}. ${material.caseStudy.moralGuidance}`,
           badge: 'Studi Kasus',
+          image: material.video.thumbnail,
           highlightWords: ['Gotong Royong', 'Integritas', 'Aksi Nyata'],
-        },
-        {
-          time: 145,
-          timestamp: '02:25',
-          title: 'Refleksi Akhir & Evaluasi HOTS',
-          speaker: 'Garuda Pancasila',
-          narration: 'Mari merefleksikan pemahaman Anda. Selesaikan LKPD digital dan uji kecakapan Anda di kuis penilaian otomatis berhadiah lencana dan poin keaktifan!',
-          badge: 'Refleksi',
-          highlightWords: ['Kuis Interaktif', 'Lencana Profil', 'Evaluasi'],
         },
       ];
 
-  // Update duration based on scenes
+  // Update duration based on material
   useEffect(() => {
     const totalSec = material.video.durationSec || 180;
     setDuration(totalSec);
+    setCurrentTime(0);
+    setActiveSceneIndex(0);
+    setIsYouTubeStarted(false);
   }, [material]);
 
   // Handle Play/Pause timer loop
@@ -161,7 +157,7 @@ export const InteractiveVideoPlayer: React.FC<InteractiveVideoPlayerProps> = ({
       synthRef.current = utterance;
       window.speechSynthesis.speak(utterance);
     } catch {
-      // Speech synthesis fallback graceful ignore
+      // Graceful fallback
     }
   };
 
@@ -211,16 +207,17 @@ export const InteractiveVideoPlayer: React.FC<InteractiveVideoPlayerProps> = ({
   };
 
   const currentScene = scenes[activeSceneIndex] || scenes[0];
-  const progressPercent = Math.min(100, Math.max(0, (currentTime / duration) * 100));
+  const activeImage = currentScene.image || material.video.thumbnail;
 
-  // Determine YouTube ID or fallback embed URL
-  const ytId = material.video.youtubeId || 'vF3E83Z6F0o';
-  const ytEmbedUrl = `https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&rel=0&modestbranding=1`;
+  // Reliable YouTube ID (BPIP RI / Kemendikbud)
+  const ytId = material.video.youtubeId || 'zi6ewCmcTfg';
+  const ytEmbedUrl = `https://www.youtube.com/embed/${ytId}?autoplay=1&enablejsapi=1&rel=0&modestbranding=1`;
+  const ytWatchUrl = `https://www.youtube.com/watch?v=${ytId}`;
 
   return (
     <div
       ref={containerRef}
-      className={`bg-slate-950 text-white rounded-3xl overflow-hidden shadow-2xl border border-sky-400/30 flex flex-col transition-all ${
+      className={`bg-slate-950 text-white rounded-3xl overflow-hidden shadow-2xl border-2 border-sky-400/40 flex flex-col transition-all ${
         compact ? 'max-w-3xl mx-auto' : 'w-full'
       }`}
     >
@@ -228,11 +225,11 @@ export const InteractiveVideoPlayer: React.FC<InteractiveVideoPlayerProps> = ({
       <div className="bg-gradient-to-r from-sky-900 via-sky-800 to-slate-900 px-4 py-3 border-b border-sky-600/30 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl bg-sky-500/20 border border-sky-400/40 flex items-center justify-center text-sky-300">
-            <Film size={18} className="animate-spin" style={{ animationDuration: isPlaying ? '4s' : '0s' }} />
+            <Film size={18} className="animate-spin" style={{ animationDuration: isPlaying ? '3s' : '0s' }} />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-black uppercase tracking-wider bg-sky-500 text-sky-950 px-2 py-0.5 rounded-full">
+              <span className="text-[10px] font-black uppercase tracking-wider bg-sky-400 text-sky-950 px-2 py-0.5 rounded-full">
                 Kelas {material.grade} • Bab {material.chapterNumber}
               </span>
               <span className="text-[10px] font-semibold text-sky-200">
@@ -259,7 +256,7 @@ export const InteractiveVideoPlayer: React.FC<InteractiveVideoPlayerProps> = ({
             }`}
           >
             <Sparkles size={13} />
-            <span>Animasi Interaktif</span>
+            <span>Animasi Interaktif SMANDE</span>
           </button>
           <button
             onClick={() => {
@@ -274,7 +271,7 @@ export const InteractiveVideoPlayer: React.FC<InteractiveVideoPlayerProps> = ({
             }`}
           >
             <Play size={13} />
-            <span>YouTube Resmi</span>
+            <span>YouTube Resmi (Suara & Gambar HD)</span>
           </button>
 
           {onClose && (
@@ -291,36 +288,46 @@ export const InteractiveVideoPlayer: React.FC<InteractiveVideoPlayerProps> = ({
       {/* Main Video Viewport */}
       <div className="relative aspect-video w-full bg-slate-950 overflow-hidden flex items-center justify-center select-none">
         {activeMode === 'animation' ? (
-          <div className="relative w-full h-full flex flex-col justify-between p-4 md:p-6 overflow-hidden bg-gradient-to-br from-slate-950 via-sky-950/70 to-slate-950">
-            {/* Animated Background Motion Elements ("Berputar" & Visual Depth) */}
-            <div className="absolute inset-0 pointer-events-none opacity-20">
-              {/* Rotating Film Reels */}
+          /* ================= MODE 1: ANIMASI INTERAKTIF DENGAN GAMBAR JELAS & BERPUTAR ================= */
+          <div className="relative w-full h-full flex flex-col justify-between overflow-hidden">
+            {/* Background Educational Picture with Dynamic Zoom / Ken Burns Animation */}
+            <div className="absolute inset-0 z-0">
+              <img
+                src={activeImage}
+                alt={currentScene.title}
+                key={activeSceneIndex}
+                className={`w-full h-full object-cover transition-all duration-1000 ${
+                  isPlaying ? 'scale-105' : 'scale-100'
+                }`}
+              />
+              {/* Gradient Scrims for text contrast */}
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-slate-950/40" />
+              <div className="absolute inset-0 bg-sky-950/30 mix-blend-multiply" />
+            </div>
+
+            {/* Rotating Film Reels ("Berputar" di pojok atas & bawah) */}
+            <div className="absolute inset-0 pointer-events-none z-10 opacity-30">
               <div
-                className="absolute -top-20 -left-20 w-80 h-80 rounded-full border-4 border-dashed border-sky-400/40 animate-spin"
-                style={{ animationDuration: isPlaying ? `${8 / playbackSpeed}s` : '0s' }}
+                className="absolute top-3 left-3 w-16 h-16 md:w-20 md:h-20 rounded-full border-4 border-dashed border-amber-300 animate-spin"
+                style={{ animationDuration: isPlaying ? `${6 / playbackSpeed}s` : '0s' }}
               />
               <div
-                className="absolute -bottom-24 -right-24 w-96 h-96 rounded-full border-4 border-dashed border-sky-300/30 animate-spin"
+                className="absolute top-3 right-3 w-16 h-16 md:w-20 md:h-20 rounded-full border-4 border-dashed border-sky-300 animate-spin"
                 style={{
-                  animationDuration: isPlaying ? `${12 / playbackSpeed}s` : '0s',
+                  animationDuration: isPlaying ? `${6 / playbackSpeed}s` : '0s',
                   animationDirection: 'reverse',
                 }}
-              />
-              {/* Center Spinning Mandala Wheel */}
-              <div
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full border border-sky-500/20 animate-spin"
-                style={{ animationDuration: isPlaying ? `${20 / playbackSpeed}s` : '0s' }}
               />
             </div>
 
             {/* Top Scene Pill & Speaker Badge */}
-            <div className="relative z-10 flex items-center justify-between">
+            <div className="relative z-20 p-4 md:p-6 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="flex items-center gap-1.5 bg-sky-500/20 border border-sky-400/40 text-sky-300 px-3 py-1 rounded-full text-xs font-bold backdrop-blur-md">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="flex items-center gap-1.5 bg-sky-950/80 border border-sky-400/50 text-sky-200 px-3.5 py-1.5 rounded-full text-xs font-bold shadow-lg backdrop-blur-md">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
                   {currentScene.badge}
                 </span>
-                <span className="text-xs text-slate-300 font-medium hidden sm:inline-block">
+                <span className="text-xs text-white font-bold bg-black/60 px-2.5 py-1 rounded-lg backdrop-blur-sm border border-white/20 hidden sm:inline-block">
                   Adegan {activeSceneIndex + 1} dari {scenes.length}
                 </span>
               </div>
@@ -329,104 +336,91 @@ export const InteractiveVideoPlayer: React.FC<InteractiveVideoPlayerProps> = ({
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setIsLooping(!isLooping)}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-colors ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all shadow-md backdrop-blur-md ${
                     isLooping
-                      ? 'bg-sky-500/20 text-sky-300 border-sky-400/40'
-                      : 'bg-slate-800/80 text-slate-400 border-slate-700'
+                      ? 'bg-sky-600/90 text-white border-sky-400'
+                      : 'bg-black/60 text-slate-300 border-slate-700'
                   }`}
-                  title={isLooping ? 'Putar Terus Aktif (Auto Loop)' : 'Putar Sekali'}
+                  title={isLooping ? 'Putar Berulang Aktif' : 'Putar Sekali'}
                 >
-                  <RotateCcw size={12} className={isPlaying && isLooping ? 'animate-spin' : ''} style={{ animationDuration: '3s' }} />
-                  <span>{isLooping ? 'Putar Berulang 🔄' : 'Sekali'}</span>
+                  <RotateCcw size={13} className={isPlaying && isLooping ? 'animate-spin' : ''} style={{ animationDuration: '3s' }} />
+                  <span>{isLooping ? 'Putar Terus 🔄' : 'Sekali'}</span>
                 </button>
 
                 <button
                   onClick={toggleVoiceNarration}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-colors ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all shadow-md backdrop-blur-md ${
                     voiceNarrationEnabled
-                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40'
-                      : 'bg-slate-800/80 text-slate-400 border-slate-700'
+                      ? 'bg-emerald-600/90 text-white border-emerald-400'
+                      : 'bg-black/60 text-slate-300 border-slate-700'
                   }`}
                   title="Bacakan narasi dengan suara Guru / AI Tutor"
                 >
-                  <Volume size={12} />
-                  <span>{voiceNarrationEnabled ? 'Suara Aktif' : 'Suara Guru'}</span>
+                  <Volume size={13} />
+                  <span>{voiceNarrationEnabled ? 'Suara Guru Aktif' : 'Bunyikan Suara'}</span>
                 </button>
               </div>
             </div>
 
-            {/* Center Dynamic Animated Graphics Showcase */}
-            <div className="relative z-10 flex-1 flex flex-col md:flex-row items-center justify-center gap-6 my-2">
-              {/* Left: Animated Character / Emblem Stage */}
-              <div className="relative flex flex-col items-center">
-                {/* Glowing Aura Ring */}
+            {/* Center Dynamic Picture & Narration Showcase */}
+            <div className="relative z-20 px-4 md:px-8 flex flex-col md:flex-row items-center justify-center gap-5 my-auto">
+              {/* Left: Speaker / Emblem Card */}
+              <div className="flex flex-col items-center shrink-0">
                 <div
-                  className={`w-28 h-28 md:w-36 md:h-36 rounded-full flex items-center justify-center p-2 relative transition-all duration-700 ${
+                  className={`w-24 h-24 md:w-28 md:h-28 rounded-2xl p-1 relative transition-all duration-700 shadow-2xl ${
                     isPlaying
-                      ? 'bg-gradient-to-tr from-sky-600/40 via-blue-500/20 to-sky-300/40 shadow-2xl shadow-sky-500/30 border border-sky-400/60'
-                      : 'bg-slate-900 border border-slate-800'
+                      ? 'bg-gradient-to-tr from-sky-400 via-amber-300 to-sky-500 ring-4 ring-sky-400/40'
+                      : 'bg-slate-800 ring-2 ring-slate-700'
                   }`}
                 >
-                  {/* Rotating decorative ticks */}
-                  <div
-                    className="absolute inset-0 rounded-full border-2 border-dotted border-sky-400/30 animate-spin"
-                    style={{ animationDuration: isPlaying ? '10s' : '0s' }}
-                  />
-
-                  {/* Character / Teacher Avatar / Garuda Emblem */}
-                  <div className="w-full h-full rounded-full overflow-hidden bg-gradient-to-b from-sky-900 to-slate-950 flex flex-col items-center justify-center p-2 text-center relative">
+                  <div className="w-full h-full rounded-xl overflow-hidden bg-white p-1.5 flex flex-col items-center justify-center">
                     <img
                       src="/assets/aistudio/Logo_Pembelajaran_Interaktif_Pendidikan_Pancasila__1__a1b85239.png"
-                      alt="Logo Pendidikan Pancasila"
-                      className={`w-16 h-16 md:w-20 md:h-20 object-contain drop-shadow-md transition-transform duration-500 ${
-                        isPlaying ? 'scale-105 animate-pulse' : 'scale-95 opacity-80'
-                      }`}
+                      alt="Logo Pendidikan Pancasila SMANDE"
+                      className="w-full h-full object-contain"
                     />
                   </div>
 
-                  {/* Audio Wave Bars when playing */}
+                  {/* Audio visualizer bounce when playing */}
                   {isPlaying && (
-                    <div className="absolute -bottom-3 flex items-end gap-1 px-2 py-0.5 rounded-full bg-slate-900/90 border border-sky-400/50">
-                      <span className="w-1 bg-sky-400 rounded-full animate-bounce h-3" style={{ animationDelay: '0ms' }} />
-                      <span className="w-1 bg-sky-300 rounded-full animate-bounce h-5" style={{ animationDelay: '150ms' }} />
-                      <span className="w-1 bg-amber-400 rounded-full animate-bounce h-4" style={{ animationDelay: '300ms' }} />
-                      <span className="w-1 bg-sky-400 rounded-full animate-bounce h-2" style={{ animationDelay: '75ms' }} />
+                    <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 flex items-end gap-1 px-2 py-0.5 rounded-full bg-slate-900 border border-sky-400">
+                      <span className="w-1 bg-sky-400 rounded-full animate-bounce h-3" />
+                      <span className="w-1 bg-amber-400 rounded-full animate-bounce h-4" style={{ animationDelay: '150ms' }} />
+                      <span className="w-1 bg-sky-300 rounded-full animate-bounce h-2" style={{ animationDelay: '300ms' }} />
                     </div>
                   )}
                 </div>
 
-                <div className="mt-3 text-center">
-                  <span className="text-[11px] font-bold text-sky-300 block">
-                    {currentScene.speaker}
-                  </span>
-                  <span className="text-[10px] text-slate-400">Pendidikan Pancasila SMANDE</span>
-                </div>
+                <span className="mt-3 text-xs font-black text-amber-300 drop-shadow-md">
+                  {currentScene.speaker}
+                </span>
+                <span className="text-[10px] text-sky-200">SMA Negeri 1 Mande</span>
               </div>
 
-              {/* Right: Interactive Scene Board */}
-              <div className="flex-1 max-w-xl bg-slate-900/90 backdrop-blur-md border border-sky-500/30 rounded-2xl p-4 md:p-5 shadow-xl flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between text-xs text-sky-400 font-bold mb-1.5">
-                    <span className="flex items-center gap-1.5">
-                      <BookOpen size={13} />
-                      {currentScene.title}
-                    </span>
-                    <span className="font-mono text-slate-400">{currentScene.timestamp}</span>
-                  </div>
-
-                  <p className="text-xs md:text-sm text-slate-100 font-medium leading-relaxed mb-3 min-h-[60px]">
-                    "{currentScene.narration}"
-                  </p>
+              {/* Right: Glassmorphism Narration & Concept Card */}
+              <div className="max-w-xl w-full bg-slate-950/85 backdrop-blur-md border border-white/20 rounded-2xl p-4 md:p-5 shadow-2xl">
+                <div className="flex items-center justify-between text-xs text-sky-300 font-extrabold mb-1.5">
+                  <span className="flex items-center gap-1.5">
+                    <BookOpen size={14} className="text-amber-400" />
+                    {currentScene.title}
+                  </span>
+                  <span className="font-mono bg-sky-900/60 px-2 py-0.5 rounded text-sky-200 border border-sky-600/40">
+                    {currentScene.timestamp}
+                  </span>
                 </div>
 
-                {/* Keyword Highlights Pills */}
+                <p className="text-xs md:text-sm text-white font-medium leading-relaxed mb-3 drop-shadow-sm min-h-[50px]">
+                  "{currentScene.narration}"
+                </p>
+
+                {/* Keyword Highlights */}
                 {currentScene.highlightWords && currentScene.highlightWords.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 pt-2 border-t border-slate-800">
-                    <span className="text-[10px] text-slate-400 font-semibold mr-1">Fokus:</span>
+                  <div className="flex flex-wrap gap-1.5 pt-2 border-t border-white/10">
+                    <span className="text-[10px] text-slate-300 font-semibold mr-1">Kata Kunci:</span>
                     {currentScene.highlightWords.map((word, wIdx) => (
                       <span
                         key={wIdx}
-                        className="text-[10px] font-bold px-2 py-0.5 bg-sky-500/20 text-sky-200 border border-sky-400/30 rounded-md"
+                        className="text-[10px] font-bold px-2 py-0.5 bg-sky-500/30 text-sky-200 border border-sky-400/40 rounded-md"
                       >
                         #{word}
                       </span>
@@ -436,28 +430,102 @@ export const InteractiveVideoPlayer: React.FC<InteractiveVideoPlayerProps> = ({
               </div>
             </div>
 
-            {/* Bottom Subtitles Box (if enabled) */}
+            {/* Bottom Subtitles Box */}
             {showSubtitles && (
-              <div className="relative z-10 mx-auto max-w-2xl bg-black/85 border border-slate-700/80 px-4 py-2 rounded-xl text-center shadow-lg backdrop-blur-md">
-                <span className="text-xs md:text-sm font-bold text-amber-300 drop-shadow">
+              <div className="relative z-20 mx-4 md:mx-auto max-w-2xl mb-4 bg-slate-950/90 border border-amber-400/50 px-4 py-2 rounded-xl text-center shadow-2xl backdrop-blur-md">
+                <span className="text-xs md:text-sm font-extrabold text-amber-300 drop-shadow">
                   {currentScene.narration}
                 </span>
               </div>
             )}
           </div>
         ) : (
-          /* Mode 2: YouTube Streaming Embed */
-          <div className="w-full h-full relative">
-            <iframe
-              src={ytEmbedUrl}
-              title={material.video.title}
-              className="w-full h-full border-0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              allowFullScreen
-            />
+          /* ================= MODE 2: YOUTUBE RESMI DENGAN GAMBAR & SUARA ================= */
+          <div className="w-full h-full relative bg-slate-950 flex flex-col justify-center items-center">
+            {!isYouTubeStarted ? (
+              /* Interactive Pre-Play Cover (Guarantees crisp image & unmuted sound on click) */
+              <div className="relative w-full h-full flex flex-col items-center justify-center p-6 text-center">
+                <img
+                  src={material.video.thumbnail}
+                  alt={material.video.title}
+                  className="absolute inset-0 w-full h-full object-cover opacity-60"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/70 to-slate-950/50" />
+
+                <div className="relative z-10 max-w-lg space-y-4">
+                  <div className="inline-flex items-center gap-2 bg-red-600/90 text-white px-3.5 py-1 rounded-full text-xs font-black shadow-lg">
+                    <Play size={14} className="fill-white" />
+                    <span>Video Resmi YouTube Kemendikbud & BPIP RI</span>
+                  </div>
+
+                  <h3 className="text-base md:text-xl font-black text-white leading-tight">
+                    {material.video.title}
+                  </h3>
+
+                  <p className="text-xs text-slate-200 max-w-md mx-auto">
+                    Klik tombol di bawah untuk memutar video dengan gambar jernih HD dan suara penuh tanpa terblokir.
+                  </p>
+
+                  <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                    <button
+                      onClick={() => setIsYouTubeStarted(true)}
+                      className="px-6 py-3 bg-red-600 hover:bg-red-500 text-white font-black text-sm rounded-2xl shadow-xl shadow-red-600/50 flex items-center gap-2.5 transform hover:scale-105 active:scale-95 transition-all"
+                    >
+                      <Play size={20} className="fill-white" />
+                      <span>Putar Video Sekarang (Suara & Gambar HD)</span>
+                    </button>
+
+                    <a
+                      href={ytWatchUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-4 py-3 bg-slate-900/90 hover:bg-slate-800 text-sky-200 font-bold text-xs rounded-2xl border border-sky-400/40 flex items-center gap-1.5 transition-colors"
+                    >
+                      <ExternalLink size={14} />
+                      <span>Buka di YouTube</span>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* Active YouTube Iframe */
+              <div className="w-full h-full relative">
+                <iframe
+                  src={ytEmbedUrl}
+                  title={material.video.title}
+                  className="w-full h-full border-0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              </div>
+            )}
           </div>
         )}
       </div>
+
+      {/* Mode YouTube Info Strip (Sound helper) */}
+      {activeMode === 'youtube' && (
+        <div className="bg-slate-900 px-4 py-2 border-t border-slate-800 flex flex-wrap items-center justify-between text-xs text-slate-300 gap-2">
+          <div className="flex items-center gap-2">
+            <Volume2 size={15} className="text-amber-400 shrink-0" />
+            <span>
+              <b>Tips Audio:</b> Jika suara tertahan oleh peramban, klik ikon speaker pada pemutar video YouTube untuk membunyikannya.
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <a
+              href={ytWatchUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-bold text-sky-300 hover:text-white flex items-center gap-1"
+            >
+              <span>Tonton Langsung di YouTube</span>
+              <ExternalLink size={12} />
+            </a>
+          </div>
+        </div>
+      )}
 
       {/* Video Control Bar (when in animation mode) */}
       {activeMode === 'animation' && (
@@ -476,7 +544,7 @@ export const InteractiveVideoPlayer: React.FC<InteractiveVideoPlayerProps> = ({
                     key={idx}
                     onClick={() => jumpToScene(idx)}
                     style={{ left: `${markLeft}%` }}
-                    className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-sky-300 border border-slate-950 z-20 cursor-pointer hover:scale-150 transition-transform"
+                    className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-amber-400 border border-slate-950 z-20 cursor-pointer hover:scale-150 transition-transform"
                     title={`${s.timestamp} - ${s.title}`}
                   />
                 );
@@ -620,7 +688,7 @@ export const InteractiveVideoPlayer: React.FC<InteractiveVideoPlayerProps> = ({
       {/* Chapters / Scenes Selector Strip */}
       <div className="bg-slate-950 border-t border-slate-900 px-4 py-2.5 overflow-x-auto flex items-center gap-2">
         <span className="text-[11px] font-bold text-slate-400 shrink-0 uppercase tracking-wider">
-          Pintasan Bab:
+          Pintasan Adegan:
         </span>
         {scenes.map((scene, idx) => (
           <button
@@ -628,7 +696,7 @@ export const InteractiveVideoPlayer: React.FC<InteractiveVideoPlayerProps> = ({
             onClick={() => jumpToScene(idx)}
             className={`px-3 py-1 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
               activeSceneIndex === idx
-                ? 'bg-sky-600 text-white shadow-md'
+                ? 'bg-sky-600 text-white shadow-md ring-2 ring-sky-400/50'
                 : 'bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800'
             }`}
           >

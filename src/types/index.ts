@@ -58,6 +58,7 @@ export interface MaterialSection {
       speaker: string;
       narration: string;
       badge: string;
+      image?: string;
       highlightWords?: string[];
     }[];
   };

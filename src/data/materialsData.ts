@@ -51,8 +51,8 @@ export const materialsData: MaterialSection[] = [
       title: 'Video Bedah Sejarah: Detik-detik Perumusan Pancasila 1945',
       duration: '08:24',
       durationSec: 180,
-      youtubeId: 'kJQP7kiw5Fk',
-      thumbnail: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=800&auto=format&fit=crop&q=60',
+      youtubeId: 'zi6ewCmcTfg',
+      thumbnail: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=1200&auto=format&fit=crop&q=80',
       summary: 'Analisis visual arsip sejarah otentik dan rekaman pidato Bung Karno mengenai dasar filsafat negara.',
       keyPoints: ['Makna philosophische grondslag', 'Dinamika Panitia Sembilan', 'Pelajaran keteladanan Bung Hatta'],
       scenes: [
@@ -63,6 +63,7 @@ export const materialsData: MaterialSection[] = [
           speaker: 'Munawar Rois, S.Pd. (Guru Pengampu)',
           narration: 'Selamat datang anak-anakku di SMA Negeri 1 Mande. Pada video animasi ini, kita kembali ke Mei 1945 ketika 67 tokoh bangsa berkumpul merumuskan pondasi negara merdeka.',
           badge: 'Fase Pembuka',
+          image: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=1200&auto=format&fit=crop&q=80',
           highlightWords: ['BPUPKI', 'Dr. Radjiman', 'Dasar Negara'],
         },
         {
@@ -72,6 +73,7 @@ export const materialsData: MaterialSection[] = [
           speaker: 'Ir. Soekarno',
           narration: 'Bung Karno menyampaikan konsep Philosophische Grondslag dan mengusulkan lima prinsip yang diberi nama Pancasila. Jiwa bangsa Indonesia yang terpendam berabad-abad akhirnya bangkit kembali.',
           badge: 'Gagasan Utama',
+          image: 'https://images.unsplash.com/photo-1576267423445-b2e0074d68a4?w=1200&auto=format&fit=crop&q=80',
           highlightWords: ['Philosophische Grondslag', 'Pancasila 1 Juni', 'Gotong Royong'],
         },
         {
@@ -81,6 +83,7 @@ export const materialsData: MaterialSection[] = [
           speaker: 'Panitia Sembilan',
           narration: 'Pada 22 Juni 1945, Panitia Sembilan menghasilkan Piagam Jakarta sebagai jembatan kesepakatan antara golongan kebangsaan dan golongan religius demi persatuan.',
           badge: 'Piagam Jakarta',
+          image: 'https://images.unsplash.com/photo-1455390582262-044cdead277a?w=1200&auto=format&fit=crop&q=80',
           highlightWords: ['Panitia Sembilan', 'Piagam Jakarta', 'Toleransi'],
         },
         {
@@ -90,6 +93,7 @@ export const materialsData: MaterialSection[] = [
           speaker: 'Drs. Mohammad Hatta',
           narration: 'Demi menjaga keutuhan Indonesia dari Sabang sampai Merauke, para pendiri bangsa berbesar hati mengubah sila pertama menjadi Ketuhanan Yang Maha Esa. Inilah puncak keteladanan!',
           badge: 'Pengesahan PPKI',
+          image: 'https://images.unsplash.com/photo-1532375810709-75b1da00537c?w=1200&auto=format&fit=crop&q=80',
           highlightWords: ['PPKI', 'Ketuhanan YME', 'Persatuan Nasional'],
         },
       ],
@@ -167,8 +171,8 @@ export const materialsData: MaterialSection[] = [
       title: 'Video Animasi: Mengapa Kita Membutuhkan Hukum dan Konstitusi?',
       duration: '06:15',
       durationSec: 160,
-      youtubeId: '77mS50oQ8o4',
-      thumbnail: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=800&auto=format&fit=crop&q=60',
+      youtubeId: 'zi6ewCmcTfg',
+      thumbnail: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=1200&auto=format&fit=crop&q=80',
       summary: 'Penjelasan visual tentang apa jadinya negara tanpa hukum (chaos/anarki) dan pentingnya perlindungan konstitusional.',
       keyPoints: ['Fungsi Konstitusi', 'Asas Legalitas', 'Peran Mahkamah Konstitusi'],
       scenes: [
@@ -179,6 +183,7 @@ export const materialsData: MaterialSection[] = [
           speaker: 'Munawar Rois, S.Pd.',
           narration: 'Bayangkan jalan raya tanpa lampu lalu lintas dan aturan rambu. Pasti terjadi tabrakan dan kekacauan. Begitulah analogi sebuah bangsa tanpa hukum dan konstitusi.',
           badge: 'Simulasi Kehidupan',
+          image: 'https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=1200&auto=format&fit=crop&q=80',
           highlightWords: ['Ketertiban', 'Aturan', 'Keadilan'],
         },
         {
@@ -188,6 +193,7 @@ export const materialsData: MaterialSection[] = [
           speaker: 'Narator Konstitusi',
           narration: 'UUD 1945 berada di puncak piramida tertinggi. Peraturan di bawahnya seperti TAP MPR, Undang-Undang, hingga Peraturan Daerah tidak boleh bertentangan dengan UUD 1945.',
           badge: 'Tata Urutan Hukum',
+          image: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=1200&auto=format&fit=crop&q=80',
           highlightWords: ['Lex Superior', 'UUD 1945', 'Perda'],
         },
         {
@@ -197,6 +203,7 @@ export const materialsData: MaterialSection[] = [
           speaker: 'Munawar Rois, S.Pd.',
           narration: 'Norma Agama, Kesusilaan, Kesopanan, dan Hukum saling menopang. Taat hukum bukan karena takut dihukum, melainkan bukti kepedulian terhadap keselamatan sesama.',
           badge: 'Norma Sosial',
+          image: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=1200&auto=format&fit=crop&q=80',
           highlightWords: ['Norma Hukum', 'Disiplin', 'Kesopanan'],
         },
       ],
@@ -261,8 +268,8 @@ export const materialsData: MaterialSection[] = [
       title: 'Video Dokumenter: Mozaik Keberagaman Budaya Indonesia',
       duration: '09:50',
       durationSec: 180,
-      youtubeId: 'Z1BCzT7x1kY',
-      thumbnail: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=800&auto=format&fit=crop&q=60',
+      youtubeId: 'zi6ewCmcTfg',
+      thumbnail: 'https://images.unsplash.com/photo-1596402184320-417e7178b2cd?w=1200&auto=format&fit=crop&q=80',
       summary: 'Perjalanan melintasi Sabang sampai Merauke menyaksikan harmoni kehidupan masyarakat yang menjunjung tinggi toleransi.',
       keyPoints: ['Toleransi Beragama', 'Bahasa Daerah sebagai Identitas', 'Kearifan Lokal Nusantara'],
       scenes: [
@@ -273,6 +280,7 @@ export const materialsData: MaterialSection[] = [
           speaker: 'Munawar Rois, S.Pd.',
           narration: 'Bhinneka Tunggal Ika dicengkeram kokoh oleh cakar Garuda Pancasila. Berbeda-beda suku, adat, dan bahasa, namun disatukan dalam cita-cita Indonesia merdeka.',
           badge: 'Filosofi Bhinneka',
+          image: 'https://images.unsplash.com/photo-1532375810709-75b1da00537c?w=1200&auto=format&fit=crop&q=80',
           highlightWords: ['Bhinneka Tunggal Ika', 'Mpu Tantular', 'Garuda'],
         },
         {
@@ -282,6 +290,7 @@ export const materialsData: MaterialSection[] = [
           speaker: 'Narator Budaya',
           narration: 'Sambatan di Jawa, Subak di Bali, Mapalus di Minahasa, hingga Siadapari di Batak. Gotong royong membuktikan bahwa persaudaraan kita telah mengakar ribuan tahun.',
           badge: 'Kearifan Lokal',
+          image: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=1200&auto=format&fit=crop&q=80',
           highlightWords: ['Gotong Royong', 'Subak', 'Mapalus'],
         },
         {
@@ -291,6 +300,7 @@ export const materialsData: MaterialSection[] = [
           speaker: 'Munawar Rois, S.Pd.',
           narration: 'Di SMA Negeri 1 Mande, tidak boleh ada perundungan atau pengucilan karena asal-usul. Jadilah duta toleransi yang merangkul setiap teman dengan hangat.',
           badge: 'Aksi Pelajar',
+          image: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=1200&auto=format&fit=crop&q=80',
           highlightWords: ['Anti-Perundungan', 'Toleransi', 'Harmoni'],
         },
       ],
@@ -349,8 +359,8 @@ export const materialsData: MaterialSection[] = [
       title: 'Video Kuliah Singkat: Membedah Pancasila sebagai Ideologi Terbuka',
       duration: '07:45',
       durationSec: 175,
-      youtubeId: 'oEw8r08_yCw',
-      thumbnail: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800&auto=format&fit=crop&q=60',
+      youtubeId: 'zi6ewCmcTfg',
+      thumbnail: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&auto=format&fit=crop&q=80',
       summary: 'Eksplorasi mendalam perbandingan ideologi dunia (Liberalisme, Sosialisme, Pancasila).',
       keyPoints: ['Keseimbangan Hak Individu & Sosial', 'Nilai Ketuhanan dalam Ideologi', 'Ketahanan Budaya'],
       scenes: [
@@ -361,6 +371,7 @@ export const materialsData: MaterialSection[] = [
           speaker: 'Munawar Rois, S.Pd.',
           narration: 'Pancasila adalah meja statis tempat bertemunya semua suku, agama, dan golongan. Menjadi fondasi kokoh yang tidak boleh digeser oleh paham apa pun.',
           badge: 'Meja Statis',
+          image: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=1200&auto=format&fit=crop&q=80',
           highlightWords: ['Meja Statis', 'Titik Temu', 'Fondasi'],
         },
         {
@@ -370,6 +381,7 @@ export const materialsData: MaterialSection[] = [
           speaker: 'Narator Pemikiran Bangsa',
           narration: 'Sebagai Leitstar Dinamis, Pancasila menjadi bintang pemandu yang menerangi arah kemajuan teknologi dan kecerdasan buatan agar selalu beretika dan bermoral.',
           badge: 'Bintang Pemandu',
+          image: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&auto=format&fit=crop&q=80',
           highlightWords: ['Leitstar Dinamis', 'Teknologi', 'Etika Masa Depan'],
         },
         {
@@ -379,6 +391,7 @@ export const materialsData: MaterialSection[] = [
           speaker: 'Munawar Rois, S.Pd.',
           narration: 'Dimensi Realitas, Dimensi Idealisme, dan Dimensi Fleksibilitas menjadikan Pancasila selalu segar dan relevan membimbing generasi emas di era digital.',
           badge: 'Ideologi Terbuka',
+          image: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=1200&auto=format&fit=crop&q=80',
           highlightWords: ['Dimensi Realitas', 'Idealisme', 'Fleksibilitas'],
         },
       ],
@@ -440,8 +453,8 @@ export const materialsData: MaterialSection[] = [
       title: 'Video Simulasi: Praktik Baik Musyawarah Mufakat di Sekolah',
       duration: '06:30',
       durationSec: 155,
-      youtubeId: 'jNQXAC9IVRw',
-      thumbnail: 'https://images.unsplash.com/photo-1577495508048-b635879837f1?w=800&auto=format&fit=crop&q=60',
+      youtubeId: 'zi6ewCmcTfg',
+      thumbnail: 'https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?w=1200&auto=format&fit=crop&q=80',
       summary: 'Bagaimana memimpin sidang musyawarah OSIS yang demokratis, tertib, dan menghasilkan solusi win-win solution.',
       keyPoints: ['Tata Tertib Persidangan', 'Etika Interupsi', 'Teknik Menemukan Titik Temu'],
       scenes: [
@@ -452,6 +465,7 @@ export const materialsData: MaterialSection[] = [
           speaker: 'Munawar Rois, S.Pd.',
           narration: 'Demokrasi Pancasila bukan tirani mayoritas dan bukan pula pemaksaan kehendak. Intinya adalah musyawarah untuk mufakat dengan dilandasi hikmat kebijaksanaan.',
           badge: 'Sila ke-4',
+          image: 'https://images.unsplash.com/photo-1577495508048-b635879837f1?w=1200&auto=format&fit=crop&q=80',
           highlightWords: ['Musyawarah', 'Mufakat', 'Hikmat'],
         },
         {
@@ -461,6 +475,7 @@ export const materialsData: MaterialSection[] = [
           speaker: 'Ketua MPK SMANDE',
           narration: 'Asas LUBER JURDIL (Langsung, Umum, Bebas, Rahasia, Jujur, dan Adil) harus diwujudkan dalam pesta demokrasi pemilihan ketua OSIS di sekolah.',
           badge: 'Simulasi Pemilu',
+          image: 'https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?w=1200&auto=format&fit=crop&q=80',
           highlightWords: ['Luber Jurdil', 'Pemilih Pemula', 'Integritas Suara'],
         },
         {
@@ -470,6 +485,7 @@ export const materialsData: MaterialSection[] = [
           speaker: 'Munawar Rois, S.Pd.',
           narration: 'Setelah kesepakatan diputuskan bersama, seluruh peserta wajib melaksanakan keputusan dengan ikhlas dan penuh rasa tanggung jawab.',
           badge: 'Tanggung Jawab',
+          image: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1200&auto=format&fit=crop&q=80',
           highlightWords: ['Komitmen', 'Legawa', 'Gotong Royong'],
         },
       ],
@@ -528,8 +544,8 @@ export const materialsData: MaterialSection[] = [
       title: 'Video Edukasi KPK: Tunas Integritas untuk Generasi Emas 2045',
       duration: '08:10',
       durationSec: 170,
-      youtubeId: '9mX0y0vC7xY',
-      thumbnail: 'https://images.unsplash.com/photo-1450133064473-71024230f91b?w=800&auto=format&fit=crop&q=60',
+      youtubeId: 'zi6ewCmcTfg',
+      thumbnail: 'https://images.unsplash.com/photo-1450133064473-71024230f91b?w=1200&auto=format&fit=crop&q=80',
       summary: 'Pentingnya peran generasi muda dalam memutus mata rantai korupsi dan mewujudkan Indonesia yang adil makmur.',
       keyPoints: ['Definisi Gratifikasi & Suap', 'Whistleblowing System', 'Kemandirian Pemuda'],
       scenes: [
@@ -540,6 +556,7 @@ export const materialsData: MaterialSection[] = [
           speaker: 'Munawar Rois, S.Pd.',
           narration: 'Jujur, Disiplin, Tanggung Jawab, Berani, Sederhana, Peduli, Mandiri, Adil, dan Kerja Keras. 9 nilai ini adalah benteng moral generasi muda.',
           badge: 'Nilai Integritas',
+          image: 'https://images.unsplash.com/photo-1450133064473-71024230f91b?w=1200&auto=format&fit=crop&q=80',
           highlightWords: ['Jujur', 'Tanggung Jawab', 'Antikorupsi'],
         },
         {
@@ -549,6 +566,7 @@ export const materialsData: MaterialSection[] = [
           speaker: 'Penyuluh Antikorupsi',
           narration: 'Korupsi merusak infrastruktur, pendidikan, dan kesehatan. Budaya jujur harus dimulai dari tidak menyontek saat ujian sekolah!',
           badge: 'Dampak Sosial',
+          image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200&auto=format&fit=crop&q=80',
           highlightWords: ['Keadilan Sosial', 'Transparansi', 'Akuntabilitas'],
         },
         {
@@ -558,6 +576,7 @@ export const materialsData: MaterialSection[] = [
           speaker: 'Munawar Rois, S.Pd.',
           narration: 'Jadilah pelopor kantin kejujuran dan teladan bagi adik-adik kelas di SMAN 1 Mande. Berani jujur itu hebat!',
           badge: 'Komitmen Pelajar',
+          image: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?w=1200&auto=format&fit=crop&q=80',
           highlightWords: ['Kantin Kejujuran', 'Integritas Akademik', 'Karakter'],
         },
       ],
@@ -610,8 +629,8 @@ export const materialsData: MaterialSection[] = [
       title: 'Video Edukasi: Cerdas Bermedia Sosial dengan Nilai Pancasila',
       duration: '07:15',
       durationSec: 165,
-      youtubeId: '6-2y8z1tC9A',
-      thumbnail: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800&auto=format&fit=crop&q=60',
+      youtubeId: 'zi6ewCmcTfg',
+      thumbnail: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1200&auto=format&fit=crop&q=80',
       summary: 'Tips praktis mendeteksi hoaks, memahami clickbait, dan membangun ekosistem digital yang sehat.',
       keyPoints: ['Ciri Berita Bohong', 'Etika Kolom Komentar', 'Digital Footprint'],
       scenes: [
@@ -622,6 +641,7 @@ export const materialsData: MaterialSection[] = [
           speaker: 'Munawar Rois, S.Pd.',
           narration: 'Jempolmu adalah harimaumu. Di era kecerdasan buatan dan media sosial, pertahanan ideologi bangsa ditentukan oleh kedewasaan literasi digital setiap pelajar.',
           badge: 'Etika Siber',
+          image: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1200&auto=format&fit=crop&q=80',
           highlightWords: ['Literasi Digital', 'Saring Sebelum Sharing', 'Netiket'],
         },
         {
@@ -631,6 +651,7 @@ export const materialsData: MaterialSection[] = [
           speaker: 'Relawan Cek Fakta',
           narration: 'Langkah 1: Periksa judul provokatif. Langkah 2: Cek sumber resmi dan tanggal rilis. Langkah 3: Jangan teruskan pesan rantai sebelum tabayyun terbukti benar!',
           badge: 'Cek Fakta',
+          image: 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=1200&auto=format&fit=crop&q=80',
           highlightWords: ['Tabayyun', 'Verifikasi', 'Anti-Hoaks'],
         },
         {
@@ -640,6 +661,7 @@ export const materialsData: MaterialSection[] = [
           speaker: 'Munawar Rois, S.Pd.',
           narration: 'Manfaatkan TikTok, Instagram, dan YouTube untuk menyebarkan karya inspiratif, sains, kebudayaan daerah, dan pesan perdamaian persatuan Indonesia.',
           badge: 'Aksi Nyata',
+          image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=1200&auto=format&fit=crop&q=80',
           highlightWords: ['Konten Positif', 'Bela Negara Digital', 'SMANDE Juara'],
         },
       ],
