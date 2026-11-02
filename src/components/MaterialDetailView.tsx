@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { MaterialSection } from '../types';
 import { sound } from '../utils/audio';
+import { InteractiveVideoPlayer } from './InteractiveVideoPlayer';
 import {
   BookOpen,
   CheckCircle2,
@@ -237,61 +238,42 @@ export const MaterialDetailView: React.FC<MaterialDetailProps> = ({
 
       {/* TAB 2: Video Pembelajaran */}
       {activeTab === 'video' && (
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl max-w-4xl mx-auto">
-          <div className="relative aspect-video rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 mb-6 flex items-center justify-center group">
-            <img
-              src={material.video.thumbnail}
-              alt={material.video.title}
-              className="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-500"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
+        <div className="space-y-6 max-w-4xl mx-auto">
+          {/* Interactive Player with full animated graphics and YouTube mode */}
+          <InteractiveVideoPlayer
+            material={material}
+            onTakeQuiz={onTakeQuiz}
+          />
 
-            {!isVideoPlaying ? (
-              <button
-                onClick={() => {
-                  setIsVideoPlaying(true);
-                  sound.playClick();
-                }}
-                className="absolute z-10 w-20 h-20 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center shadow-2xl shadow-red-600/50 transform hover:scale-110 transition-all"
-              >
-                <Play size={32} className="ml-1" />
-              </button>
-            ) : (
-              <div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-slate-950/90 text-center z-10">
-                <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mb-3">
-                  <CheckCircle2 size={24} />
-                </div>
-                <h4 className="text-lg font-bold text-white mb-2">Video Edukasi Sedang Diputar</h4>
-                <p className="text-xs text-slate-400 max-w-md mb-4">
-                  {material.video.summary}
-                </p>
-                <button
-                  onClick={() => setIsVideoPlaying(false)}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-semibold rounded-xl text-white"
-                >
-                  Tutup Pemutar
-                </button>
-              </div>
-            )}
-
-            <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-xs text-slate-300">
-              <span className="font-bold text-white">{material.video.title}</span>
-              <span className="bg-slate-900/80 px-2.5 py-1 rounded-md border border-slate-700">
-                Durasi: {material.video.duration}
-              </span>
-            </div>
-          </div>
-
-          <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800">
-            <h4 className="font-bold text-sm text-amber-400 mb-2">Poin Intisari Tayangan Video:</h4>
-            <ul className="space-y-1.5 text-xs text-slate-300">
+          {/* Key Takeaways & Discussion Guide */}
+          <div className="bg-slate-900 p-6 rounded-3xl border border-sky-800/40 shadow-xl">
+            <h4 className="font-extrabold text-sm text-amber-400 mb-3 flex items-center gap-2">
+              <Sparkles size={16} />
+              Poin Intisari Tayangan Video Animasi:
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5">
               {material.video.keyPoints.map((kp, idx) => (
-                <li key={idx} className="flex items-center gap-2">
-                  <span className="text-red-500 font-bold">✓</span>
-                  <span>{kp}</span>
-                </li>
+                <div key={idx} className="flex items-start gap-2.5 bg-slate-950/70 p-3 rounded-xl border border-slate-800">
+                  <span className="w-5 h-5 rounded-full bg-sky-500/20 text-sky-300 font-bold text-xs flex items-center justify-center shrink-0">
+                    {idx + 1}
+                  </span>
+                  <span className="text-xs text-slate-200 font-medium leading-relaxed">{kp}</span>
+                </div>
               ))}
-            </ul>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-800 text-xs">
+              <span className="text-slate-400">
+                Setelah menyimak video pembelajaran di atas, lanjut uji pemahaman Anda melalui kuis interaktif.
+              </span>
+              <button
+                onClick={() => onTakeQuiz(material.relatedQuizId)}
+                className="px-4 py-2 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold rounded-xl shadow-lg transition-transform active:scale-95 flex items-center gap-2"
+              >
+                <span>Buka Kuis Evaluasi</span>
+                <ArrowRight size={14} />
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -21,6 +21,7 @@ import { ForumDiscussionView } from './components/ForumDiscussionView';
 import { ProfileAndCompetitionsView } from './components/ProfileAndCompetitionsView';
 import { NusantaraInteractiveMap } from './components/NusantaraInteractiveMap';
 import { AITutorModal } from './components/AITutorModal';
+import { InteractiveVideoPlayer } from './components/InteractiveVideoPlayer';
 
 // Icons
 import {
@@ -57,6 +58,8 @@ export default function App() {
   const [activeMenu, setActiveMenu] = useState<string>('beranda');
   const [selectedGrade, setSelectedGrade] = useState<GradeLevel>('XI');
   const [selectedMaterial, setSelectedMaterial] = useState<MaterialSection | null>(null);
+  const [activeVideoMaterial, setActiveVideoMaterial] = useState<MaterialSection>(materialsData[0]);
+  const [videoFilterGrade, setVideoFilterGrade] = useState<'ALL' | GradeLevel>('ALL');
   const [activeQuizQuestions, setActiveQuizQuestions] = useState<Question[] | null>(null);
   const [activeQuizTitle, setActiveQuizTitle] = useState<string>('');
 
@@ -834,55 +837,169 @@ export default function App() {
 
         {/* ================= 3. VIDEO PEMBELAJARAN ================= */}
         {activeMenu === 'video' && (
-          <div className="space-y-6 animate-fade-in">
-            <div className="bg-white border border-sky-200 rounded-3xl p-6 md:p-8 shadow-md">
-              <span className="text-xs uppercase tracking-wider text-sky-700 font-bold flex items-center gap-1.5 mb-1">
-                <Play size={14} /> Media Audiovisual Edukatif
-              </span>
-              <h2 className="text-2xl font-black text-slate-800">Video Penjelasan & Animasi Studi Kasus</h2>
-              <p className="text-xs text-slate-500 mt-1">
-                Simak tayangan video pembelajaran berkualitas untuk memperdalam wawasan kebangsaan dan konstitusi di SMA Negeri 1 Mande.
-              </p>
+          <div className="space-y-8 animate-fade-in">
+            {/* Header with grade filter */}
+            <div className="bg-white border border-sky-200 rounded-3xl p-6 md:p-8 shadow-md flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <span className="text-xs uppercase tracking-wider text-sky-700 font-bold flex items-center gap-1.5 mb-1">
+                  <Play size={14} className="text-sky-600" /> Media Audiovisual Edukatif • SMA Negeri 1 Mande
+                </span>
+                <h2 className="text-2xl font-black text-slate-800">
+                  Video Animasi & Penjelasan Interaktif
+                </h2>
+                <p className="text-xs text-slate-500 mt-1">
+                  Tonton animasi edukasi sejarah konstitusi dan demokrasi dengan narasi suara, subtitle real-time, dan putaran visual interaktif.
+                </p>
+              </div>
+
+              {/* Filter Kelas */}
+              <div className="flex items-center gap-1.5 bg-sky-50 p-1.5 rounded-2xl border border-sky-200">
+                {(['ALL', 'X', 'XI', 'XII'] as const).map((g) => (
+                  <button
+                    key={g}
+                    onClick={() => {
+                      setVideoFilterGrade(g);
+                      sound.playClick();
+                    }}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                      videoFilterGrade === g
+                        ? 'bg-sky-600 text-white shadow-md'
+                        : 'text-slate-600 hover:text-sky-700 hover:bg-sky-100/50'
+                    }`}
+                  >
+                    {g === 'ALL' ? 'Semua Kelas' : `Kelas ${g}`}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {materialsData.map((m) => (
-                <div
-                  key={m.id}
-                  onClick={() => {
-                    setSelectedMaterial(m);
-                    setActiveMenu('materi');
-                    sound.playClick();
-                  }}
-                  className="bg-white border border-sky-100 hover:border-sky-300 rounded-3xl overflow-hidden shadow-md cursor-pointer group transition-all"
-                >
-                  <div className="relative aspect-video bg-sky-950 overflow-hidden">
-                    <img
-                      src={m.video.thumbnail}
-                      alt={m.video.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80"
-                    />
-                    <div className="absolute inset-0 bg-sky-950/30 flex items-center justify-center">
-                      <div className="w-12 h-12 rounded-full bg-sky-600 text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                        <Play size={20} className="ml-1" />
-                      </div>
-                    </div>
-                    <span className="absolute bottom-2 right-2 bg-slate-900/80 px-2 py-0.5 rounded text-[11px] text-white font-mono">
-                      {m.video.duration}
-                    </span>
-                  </div>
-
-                  <div className="p-5">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-sky-700 block mb-1">
-                      Kelas {m.grade} • Bab {m.chapterNumber}
-                    </span>
-                    <h4 className="font-bold text-sm text-slate-800 mb-2 line-clamp-1 group-hover:text-sky-600 transition-colors">
-                      {m.video.title}
-                    </h4>
-                    <p className="text-xs text-slate-500 line-clamp-2">{m.video.summary}</p>
-                  </div>
+            {/* Featured Active Interactive Theater Player */}
+            <div id="video-theater" className="space-y-3">
+              <div className="flex items-center justify-between px-2">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
+                  <span className="text-xs font-extrabold text-sky-900 uppercase tracking-wider">
+                    Bioskop Edukasi Pancasila SMANDE (Sedang Diputar)
+                  </span>
                 </div>
-              ))}
+                <div className="text-xs text-slate-500 font-medium">
+                  Klik video di bawah untuk mengganti judul tayangan
+                </div>
+              </div>
+
+              <InteractiveVideoPlayer
+                material={activeVideoMaterial}
+                onTakeQuiz={handleStartMaterialQuiz}
+              />
+            </div>
+
+            {/* Playlist Grid of All Videos */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between border-b border-sky-100 pb-2">
+                <h3 className="font-extrabold text-slate-800 text-lg flex items-center gap-2">
+                  <span>Pilihan Modul Video Pembelajaran</span>
+                  <span className="text-xs bg-sky-100 text-sky-800 px-2 py-0.5 rounded-full font-bold">
+                    {materialsData.filter((m) => videoFilterGrade === 'ALL' || m.grade === videoFilterGrade).length} Judul
+                  </span>
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {materialsData
+                  .filter((m) => videoFilterGrade === 'ALL' || m.grade === videoFilterGrade)
+                  .map((m) => {
+                    const isSelected = activeVideoMaterial.id === m.id;
+                    return (
+                      <div
+                        key={m.id}
+                        className={`bg-white rounded-3xl overflow-hidden shadow-md transition-all flex flex-col justify-between border ${
+                          isSelected
+                            ? 'border-sky-500 ring-4 ring-sky-400/20 shadow-sky-200'
+                            : 'border-sky-100 hover:border-sky-300'
+                        }`}
+                      >
+                        <div>
+                          <div
+                            onClick={() => {
+                              setActiveVideoMaterial(m);
+                              sound.playClick();
+                              document.getElementById('video-theater')?.scrollIntoView({ behavior: 'smooth' });
+                            }}
+                            className="relative aspect-video bg-sky-950 overflow-hidden cursor-pointer group"
+                          >
+                            <img
+                              src={m.video.thumbnail}
+                              alt={m.video.title}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80"
+                            />
+                            <div className="absolute inset-0 bg-sky-950/30 flex items-center justify-center">
+                              <div
+                                className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform ${
+                                  isSelected ? 'bg-amber-400 text-slate-950 ring-4 ring-white/50' : 'bg-sky-600 text-white'
+                                }`}
+                              >
+                                <Play size={20} className="ml-1" />
+                              </div>
+                            </div>
+
+                            {isSelected && (
+                              <span className="absolute top-2 left-2 bg-amber-400 text-slate-950 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider shadow">
+                                ▶ Sedang Diputar
+                              </span>
+                            )}
+
+                            <span className="absolute bottom-2 right-2 bg-slate-900/80 px-2 py-0.5 rounded text-[11px] text-white font-mono">
+                              {m.video.duration}
+                            </span>
+                          </div>
+
+                          <div className="p-5">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-sky-700 block mb-1">
+                              Kelas {m.grade} • Bab {m.chapterNumber}
+                            </span>
+                            <h4 className="font-bold text-sm text-slate-800 mb-2 line-clamp-1 hover:text-sky-600 transition-colors">
+                              {m.video.title}
+                            </h4>
+                            <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed mb-4">
+                              {m.video.summary}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="px-5 pb-5 pt-0 flex items-center justify-between gap-2 border-t border-sky-50 pt-3">
+                          <button
+                            onClick={() => {
+                              setActiveVideoMaterial(m);
+                              sound.playClick();
+                              document.getElementById('video-theater')?.scrollIntoView({ behavior: 'smooth' });
+                            }}
+                            className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                              isSelected
+                                ? 'bg-sky-600 text-white shadow-sm'
+                                : 'bg-sky-50 text-sky-800 hover:bg-sky-100 border border-sky-200'
+                            }`}
+                          >
+                            <Play size={13} />
+                            <span>{isSelected ? 'Putar Video Ini' : 'Tonton Video'}</span>
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setSelectedMaterial(m);
+                              setSelectedGrade(m.grade);
+                              setActiveMenu('materi');
+                              sound.playClick();
+                            }}
+                            className="px-3 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-xl border border-slate-200 transition-colors"
+                            title="Buka Teori Modul Lengkap"
+                          >
+                            📖 Modul
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
             </div>
           </div>
         )}

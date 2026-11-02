@@ -45,9 +45,21 @@ export interface MaterialSection {
   video: {
     title: string;
     duration: string;
+    durationSec?: number;
     thumbnail: string;
     summary: string;
     keyPoints: string[];
+    youtubeId?: string;
+    embedUrl?: string;
+    scenes?: {
+      time: number; // seconds offset
+      timestamp: string;
+      title: string;
+      speaker: string;
+      narration: string;
+      badge: string;
+      highlightWords?: string[];
+    }[];
   };
   lkpd: {
     title: string;
