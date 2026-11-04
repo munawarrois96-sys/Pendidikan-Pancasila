@@ -23,6 +23,7 @@ import { NusantaraInteractiveMap } from './components/NusantaraInteractiveMap';
 import { AITutorModal } from './components/AITutorModal';
 import { InteractiveVideoPlayer } from './components/InteractiveVideoPlayer';
 import { NavigationWindowFrame } from './components/NavigationWindowFrame';
+import { ClockWidget } from './components/ClockWidget';
 
 // Icons
 import {
@@ -202,6 +203,9 @@ export default function App() {
 
           {/* User Quick Info & Action Controls */}
           <div className="flex items-center gap-2">
+            {/* Real-time Clock, Day & Date Widget in Header */}
+            <ClockWidget variant="header" />
+
             {/* Tombol Garis Tiga (Navigasi Pengunjung) - Jelas dan Terlihat di Semua Mode */}
             <button
               onClick={() => {
@@ -556,6 +560,15 @@ export default function App() {
                 🦅
               </div>
             </div>
+
+            {/* Widget Jam, Waktu, Hari & Tanggal Lengkap Menarik Pengunjung */}
+            <ClockWidget
+              variant="full"
+              onExploreCalendar={() => {
+                setActiveMenu('agenda');
+                sound.playClick();
+              }}
+            />
 
             {/* Sambutan & Profil Guru Pengampu */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
@@ -1251,6 +1264,9 @@ export default function App() {
               <h2 className="text-2xl font-black text-slate-800">Agenda Pembelajaran SMA Negeri 1 Mande</h2>
               <p className="text-xs text-slate-500">Jadwal Asesmen, Tugas LKPD, dan Peringatan Hari Bersejarah Nasional.</p>
             </div>
+
+            {/* Widget Jam & Kalender Live */}
+            <ClockWidget variant="compact" />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div className="bg-white border border-sky-100 p-6 rounded-3xl shadow-sm space-y-4">
