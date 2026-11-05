@@ -54,6 +54,7 @@ import {
   Compass,
   Megaphone,
   Heart,
+  Search,
 } from 'lucide-react';
 
 export default function App() {
@@ -102,7 +103,6 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<UserProfile>(defaultStudents[0]);
   const [isSoundMuted, setIsSoundMuted] = useState(false);
   const [isAiTutorOpen, setIsAiTutorOpen] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [fontSize, setFontSize] = useState<'normal' | 'large'>('normal');
 
   const toggleSound = () => {
@@ -140,6 +140,8 @@ export default function App() {
 
   // Navigation Drawer (Garis Tiga) State
   const [isNavDrawerOpen, setIsNavDrawerOpen] = useState(false);
+  const [drawerSearch, setDrawerSearch] = useState('');
+  const [selectedDrawerCat, setSelectedDrawerCat] = useState('Semua');
 
   // 15 Main Navigation Items with categories for clear visitor navigation
   const navItems = [
@@ -159,6 +161,14 @@ export default function App() {
     { id: 'profil', label: 'Profil Siswa', icon: User, category: 'Pengguna', desc: 'Portofolio Profil Pelajar Pancasila & sertifikat' },
     { id: 'tentang', label: 'Tentang Web', icon: Info, category: 'Informasi', desc: 'Profil SMA Negeri 1 Mande & tim pengampu' },
   ];
+
+  const filteredNavItems = navItems.filter((item) => {
+    const matchSearch = item.label.toLowerCase().includes(drawerSearch.toLowerCase()) ||
+                        item.desc.toLowerCase().includes(drawerSearch.toLowerCase()) ||
+                        item.category.toLowerCase().includes(drawerSearch.toLowerCase());
+    const matchCategory = selectedDrawerCat === 'Semua' || item.category === selectedDrawerCat;
+    return matchSearch && matchCategory;
+  });
 
   return (
     <div className={`min-h-screen bg-gradient-to-b from-sky-100/70 via-sky-50 to-white text-slate-800 flex flex-col font-sans ${fontSize === 'large' ? 'text-lg' : 'text-base'}`}>
@@ -207,17 +217,20 @@ export default function App() {
             {/* Real-time Clock, Day & Date Widget in Header */}
             <ClockWidget variant="header" />
 
-            {/* Tombol Garis Tiga (Navigasi Pengunjung) - Jelas dan Terlihat di Semua Mode */}
+            {/* Tombol Garis Tiga (Menu Navigasi) - Membuka Semua 15 Menu ke Bawah */}
             <button
               onClick={() => {
                 setIsNavDrawerOpen(true);
                 sound.playClick();
               }}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-white text-sky-800 hover:bg-sky-50 font-extrabold text-xs md:text-sm rounded-xl shadow-md transition-all border border-sky-200 active:scale-95"
-              title="Buka Menu Navigasi Pengunjung (Garis Tiga)"
+              className="flex items-center gap-1.5 md:gap-2 px-3 md:px-3.5 py-1.5 bg-white text-sky-800 hover:bg-sky-50 font-extrabold text-xs md:text-sm rounded-xl shadow-md transition-all border border-sky-200 active:scale-95 group shrink-0"
+              title="Buka 15 Menu Pembelajaran (Navigasi Vertikal)"
             >
-              <Menu size={18} className="text-sky-700 stroke-[2.5]" />
-              <span className="hidden sm:inline">Menu Navigasi</span>
+              <Menu size={18} className="text-sky-700 stroke-[2.5] group-hover:rotate-6 transition-transform" />
+              <span className="font-extrabold">Menu Navigasi</span>
+              <span className="text-[10px] bg-sky-100 text-sky-800 font-black px-1.5 py-0.5 rounded-md hidden sm:inline">
+                15 Menu ▾
+              </span>
             </button>
 
             {/* Role Switcher Pill */}
@@ -289,34 +302,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* Desktop Secondary Horizontal Navigation Bar in Sky Blue */}
-        <div className="hidden md:block bg-sky-700 border-t border-sky-500/70 overflow-x-auto">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-1 py-1.5 whitespace-nowrap">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeMenu === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    setActiveMenu(item.id);
-                    setSelectedMaterial(null);
-                    sound.playClick();
-                  }}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                    isActive
-                      ? 'bg-white text-sky-800 font-extrabold shadow-sm'
-                      : 'text-sky-100 hover:text-white hover:bg-sky-600'
-                  }`}
-                >
-                  <Icon size={14} />
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
         {/* Modal / Slide-Over Drawer Navigasi Pengunjung (Garis Tiga) */}
         {isNavDrawerOpen && (
           <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex justify-start animate-fade-in">
@@ -367,56 +352,103 @@ export default function App() {
                 </div>
               </div>
 
-              {/* All 15 Menus in Drawer */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-2">
-                <div className="text-[11px] font-extrabold uppercase tracking-wider text-sky-800 mb-2">
-                  Pilih Halaman / Fitur Pembelajaran:
-                </div>
-                {navItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = activeMenu === item.id;
-                  return (
+              {/* Search & Quick Category Filters */}
+              <div className="p-3.5 border-b border-sky-100 bg-white space-y-2.5">
+                <div className="relative">
+                  <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Cari fitur/menu pembelajaran..."
+                    value={drawerSearch}
+                    onChange={(e) => setDrawerSearch(e.target.value)}
+                    className="w-full pl-9 pr-8 py-2 text-xs bg-slate-50 border border-sky-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-medium text-slate-700"
+                  />
+                  {drawerSearch && (
                     <button
-                      key={item.id}
-                      onClick={() => {
-                        handleNavigate(item.id);
-                        setIsNavDrawerOpen(false);
-                      }}
-                      className={`w-full flex items-start gap-3 p-3 rounded-2xl transition-all text-left border ${
-                        isActive
-                          ? 'bg-sky-600 text-white border-sky-500 shadow-md'
-                          : 'bg-white hover:bg-sky-50 text-slate-800 border-sky-100 hover:border-sky-300'
+                      onClick={() => setDrawerSearch('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs w-4 h-4 rounded-full flex items-center justify-center bg-slate-200"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+
+                {/* Category Chips Filter */}
+                <div className="flex gap-1.5 overflow-x-auto pb-1 text-[11px] font-bold scrollbar-none">
+                  {['Semua', 'Utama', 'Pembelajaran', 'Interaktif', 'Asesmen', 'Prestasi'].map((cat) => (
+                    <button
+                      key={cat}
+                      onClick={() => setSelectedDrawerCat(cat)}
+                      className={`px-2.5 py-1 rounded-lg shrink-0 transition-all ${
+                        selectedDrawerCat === cat
+                          ? 'bg-sky-600 text-white shadow-xs'
+                          : 'bg-sky-50 text-sky-800 hover:bg-sky-100 border border-sky-200/60'
                       }`}
                     >
-                      <div
-                        className={`p-2.5 rounded-xl shrink-0 ${
-                          isActive ? 'bg-white/20 text-white' : 'bg-sky-100 text-sky-700'
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* All 15 Menus in Drawer - Single Vertical Stack Downwards */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                <div className="text-[11px] font-extrabold uppercase tracking-wider text-sky-800 mb-2 flex items-center justify-between">
+                  <span>Daftar Menu Pembelajaran ({filteredNavItems.length}):</span>
+                  <span className="text-[10px] text-slate-400 normal-case font-medium">Klik untuk berpindah</span>
+                </div>
+
+                {filteredNavItems.length === 0 ? (
+                  <div className="text-center py-8 text-xs text-slate-400">
+                    Tidak ditemukan menu yang sesuai dengan "{drawerSearch}"
+                  </div>
+                ) : (
+                  filteredNavItems.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = activeMenu === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          handleNavigate(item.id);
+                          setIsNavDrawerOpen(false);
+                        }}
+                        className={`w-full flex items-start gap-3 p-3 rounded-2xl transition-all text-left border ${
+                          isActive
+                            ? 'bg-sky-600 text-white border-sky-500 shadow-md ring-2 ring-sky-300'
+                            : 'bg-white hover:bg-sky-50 text-slate-800 border-sky-100 hover:border-sky-300'
                         }`}
                       >
-                        <Icon size={18} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-sm leading-snug">{item.label}</span>
-                          <span
-                            className={`text-[10px] px-2 py-0.2 rounded-full font-bold ${
-                              isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
-                            }`}
-                          >
-                            {item.category}
-                          </span>
-                        </div>
-                        <p
-                          className={`text-xs mt-0.5 line-clamp-1 ${
-                            isActive ? 'text-sky-100' : 'text-slate-500'
+                        <div
+                          className={`p-2.5 rounded-xl shrink-0 ${
+                            isActive ? 'bg-white/20 text-white' : 'bg-sky-100 text-sky-700'
                           }`}
                         >
-                          {item.desc}
-                        </p>
-                      </div>
-                    </button>
-                  );
-                })}
+                          <Icon size={18} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-sm leading-snug">{item.label}</span>
+                            <span
+                              className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                                isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+                              }`}
+                            >
+                              {item.category}
+                            </span>
+                          </div>
+                          <p
+                            className={`text-xs mt-0.5 line-clamp-1 ${
+                              isActive ? 'text-sky-100' : 'text-slate-500'
+                            }`}
+                          >
+                            {item.desc}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })
+                )}
               </div>
 
               {/* Drawer Footer */}
@@ -426,48 +458,6 @@ export default function App() {
                 <span>Guru Munawar Rois, S.Pd.</span>
               </div>
             </div>
-          </div>
-        )}
-
-        {/* Mobile Dropdown Menu */}
-        {isMobileMenuOpen && (
-          <div className="md:hidden bg-sky-700 border-t border-sky-500 px-4 py-3 space-y-1 shadow-2xl max-h-[75vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-2 mb-2 border-b border-sky-600">
-              <span className="text-xs text-sky-200">Peran Pengguna:</span>
-              <div className="flex gap-1 text-xs">
-                {(['siswa', 'guru', 'admin'] as const).map((r) => (
-                  <button
-                    key={r}
-                    onClick={() => handleRoleChange(r)}
-                    className={`px-2 py-0.5 rounded capitalize font-bold ${
-                      currentUser.role === r ? 'bg-white text-sky-800' : 'text-sky-200'
-                    }`}
-                  >
-                    {r}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeMenu === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    handleNavigate(item.id);
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left ${
-                    isActive ? 'bg-white text-sky-800' : 'text-sky-100 hover:bg-sky-600'
-                  }`}
-                >
-                  <Icon size={16} />
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
           </div>
         )}
       </header>
