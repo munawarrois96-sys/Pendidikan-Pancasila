@@ -53,6 +53,7 @@ import {
   ChevronRight,
   Compass,
   Megaphone,
+  Heart,
 } from 'lucide-react';
 
 export default function App() {
@@ -419,8 +420,10 @@ export default function App() {
               </div>
 
               {/* Drawer Footer */}
-              <div className="p-4 bg-sky-50 border-t border-sky-100 text-xs text-center text-slate-500">
-                © 2026 SMA Negeri 1 Mande (SMANDE) • Cianjur, Jawa Barat
+              <div className="p-4 bg-sky-50 border-t border-sky-100 text-xs text-center font-bold text-sky-900 flex items-center justify-center gap-1.5">
+                <span>Made In</span>
+                <Heart size={14} className="fill-red-500 text-red-500 inline animate-pulse" />
+                <span>Guru Munawar Rois, S.Pd.</span>
               </div>
             </div>
           </div>
@@ -1368,28 +1371,14 @@ export default function App() {
       </main>
 
       {/* Footer in Deep Sky Blue */}
-      <footer className="mt-auto bg-sky-900 border-t border-sky-800 py-8 text-xs text-sky-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white p-1 flex items-center justify-center shrink-0 shadow-md">
-              <img
-                src="/assets/aistudio/Logo_Pembelajaran_Interaktif_Pendidikan_Pancasila__1__a1b85239.png"
-                alt="Logo SMANDE"
-                className="w-full h-full object-contain"
-              />
-            </div>
-            <div>
-              <div className="font-bold text-white text-sm">
-                Pendidikan Pancasila SMANDE • SMA Negeri 1 Mande
-              </div>
-              <p className="text-[11px] text-sky-300">
-                Membangun Generasi Emas Pelajar Pancasila 2045 yang Beriman, Kritis, Mandiri, dan Berintegritas.
-              </p>
-            </div>
-          </div>
-
-          <div className="text-[11px] text-sky-300">
-            © 2026 SMA Negeri 1 Mande. Selaras Capaian Pembelajaran BSKAP Kemendikbudristek.
+      <footer className="mt-auto bg-sky-900 border-t border-sky-800 py-6 text-sky-100 shadow-inner">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-center gap-2.5 text-center">
+          <div className="flex items-center justify-center gap-2 text-sm sm:text-base md:text-lg font-black tracking-wide text-white drop-shadow-sm">
+            <span>Made In</span>
+            <span className="inline-flex items-center justify-center text-red-500 animate-pulse drop-shadow-[0_0_8px_rgba(239,68,68,0.7)]">
+              <Heart size={22} className="fill-red-500 text-red-500 stroke-[2.5]" />
+            </span>
+            <span>Guru Munawar Rois, S.Pd.</span>
           </div>
         </div>
       </footer>
