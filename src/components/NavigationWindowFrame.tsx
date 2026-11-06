@@ -117,7 +117,7 @@ export const NavigationWindowFrame: React.FC<NavigationWindowFrameProps> = ({
                 <Layers size={13} className="text-amber-300" />
                 <span className="hidden md:inline">Pindah Jendela</span>
                 <span className="md:hidden">Menu</span>
-                <span className="text-[10px] bg-sky-600 px-1.5 py-0.2 rounded-full font-mono">15</span>
+                <span className="text-[10px] bg-sky-600 px-1.5 py-0.2 rounded-full font-mono">{navItems.length}</span>
               </button>
 
               {/* Quick Menu Dropdown Box */}
@@ -128,7 +128,7 @@ export const NavigationWindowFrame: React.FC<NavigationWindowFrameProps> = ({
                 >
                   <div className="flex items-center justify-between pb-2 mb-2 border-b border-sky-100">
                     <span className="text-xs font-black text-sky-900 uppercase tracking-wider flex items-center gap-1.5">
-                      <Layers size={14} className="text-sky-600" /> Jendela Navigasi Halaman
+                      <Layers size={14} className="text-sky-600" /> Jendela Navigasi ({navItems.length} Halaman)
                     </span>
                     <button
                       onClick={() => setIsQuickMenuOpen(false)}

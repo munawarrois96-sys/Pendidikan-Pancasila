@@ -25,12 +25,14 @@ import { InteractiveVideoPlayer } from './components/InteractiveVideoPlayer';
 import { NavigationWindowFrame } from './components/NavigationWindowFrame';
 import { ClockWidget } from './components/ClockWidget';
 import { GlossaryView } from './components/GlossaryView';
+import { ThreeDimensionalViewer } from './components/ThreeDimensionalViewer';
 
 // Icons
 import {
   Home,
   BookOpen,
   BookMarked,
+  Box,
   Play,
   Gamepad2,
   CheckSquare,
@@ -155,6 +157,7 @@ export default function App() {
     { id: 'bankSoal', label: 'Bank Soal', icon: Brain, category: 'Asesmen', desc: 'Latihan soal HOTS per bab dan tingkat kesulitan' },
     { id: 'kompetisi', label: 'Kompetisi & Lencana', icon: Award, category: 'Prestasi', desc: 'Leaderboard, poin, badges & sertifikat digital' },
     { id: 'simulasi', label: 'Simulasi Demokrasi', icon: Vote, category: 'Interaktif', desc: 'Sidang PPKI, Musyawarah Kelas, OSIS & MK' },
+    { id: 'objek3d', label: 'Objek 3D 4 Pilar', icon: Box, category: 'Interaktif', desc: 'Eksplorasi 3D Pancasila, UUD 1945, Bhinneka & NKRI' },
     { id: 'nusantara', label: 'Peta Nusantara', icon: Compass, category: 'Kebinekaan', desc: 'Eksplorasi budaya dan gotong royong 38 provinsi' },
     { id: 'elibrary', label: 'E-Library', icon: Library, category: 'Referensi', desc: 'Buku Kemdikbud, UUD 1945, 45 Butir Sila' },
     { id: 'glosarium', label: 'Glosarium Pancasila', icon: BookMarked, category: 'Referensi', desc: 'Kamus istilah lengkap Pancasila, konstitusi, hukum & demokrasi' },
@@ -227,12 +230,12 @@ export default function App() {
                 sound.playClick();
               }}
               className="flex items-center gap-1.5 md:gap-2 px-3 md:px-3.5 py-1.5 bg-white text-sky-800 hover:bg-sky-50 font-extrabold text-xs md:text-sm rounded-xl shadow-md transition-all border border-sky-200 active:scale-95 group shrink-0"
-              title="Buka 16 Menu Pembelajaran (Navigasi Vertikal)"
+              title="Buka 17 Menu Pembelajaran (Navigasi Vertikal)"
             >
               <Menu size={18} className="text-sky-700 stroke-[2.5] group-hover:rotate-6 transition-transform" />
               <span className="font-extrabold">Menu Navigasi</span>
               <span className="text-[10px] bg-sky-100 text-sky-800 font-black px-1.5 py-0.5 rounded-md hidden sm:inline">
-                16 Menu ▾
+                17 Menu ▾
               </span>
             </button>
 
@@ -378,27 +381,48 @@ export default function App() {
 
                 {/* Category Chips Filter */}
                 <div className="flex gap-1.5 overflow-x-auto pb-1 text-[11px] font-bold scrollbar-none">
-                  {['Semua', 'Utama', 'Pembelajaran', 'Interaktif', 'Asesmen', 'Referensi', 'Prestasi', 'Kebinekaan'].map((cat) => (
+                  {[
+                    { label: 'Semua', count: navItems.length },
+                    { label: 'Utama', count: 1 },
+                    { label: 'Pembelajaran', count: 2 },
+                    { label: 'Interaktif', count: 3 },
+                    { label: 'Asesmen', count: 2 },
+                    { label: 'Referensi', count: 2 },
+                    { label: 'Kebinekaan', count: 1 },
+                    { label: 'Prestasi', count: 1 },
+                  ].map((cat) => (
                     <button
-                      key={cat}
-                      onClick={() => setSelectedDrawerCat(cat)}
-                      className={`px-2.5 py-1 rounded-lg shrink-0 transition-all ${
-                        selectedDrawerCat === cat
+                      key={cat.label}
+                      onClick={() => setSelectedDrawerCat(cat.label)}
+                      className={`px-2.5 py-1 rounded-xl shrink-0 transition-all flex items-center gap-1 ${
+                        selectedDrawerCat === cat.label
                           ? 'bg-sky-600 text-white shadow-xs'
                           : 'bg-sky-50 text-sky-800 hover:bg-sky-100 border border-sky-200/60'
                       }`}
                     >
-                      {cat}
+                      <span>{cat.label}</span>
+                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                        selectedDrawerCat === cat.label ? 'bg-sky-700 text-sky-100' : 'bg-sky-200/70 text-sky-900'
+                      }`}>
+                        {cat.count}
+                      </span>
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* All 16 Menus in Drawer - Single Vertical Stack Downwards */}
+              {/* All 17 Menus in Drawer - Single Structured Stack Downwards */}
               <div className="flex-1 overflow-y-auto p-4 space-y-2">
                 <div className="text-[11px] font-extrabold uppercase tracking-wider text-sky-800 mb-2 flex items-center justify-between">
                   <span>Daftar Menu Pembelajaran ({filteredNavItems.length}):</span>
-                  <span className="text-[10px] text-slate-400 normal-case font-medium">Klik untuk berpindah</span>
+                  {selectedDrawerCat !== 'Semua' && (
+                    <button
+                      onClick={() => setSelectedDrawerCat('Semua')}
+                      className="text-[10px] text-sky-600 hover:underline font-bold"
+                    >
+                      Tampilkan Semua
+                    </button>
+                  )}
                 </div>
 
                 {filteredNavItems.length === 0 ? (
@@ -406,49 +430,62 @@ export default function App() {
                     Tidak ditemukan menu yang sesuai dengan "{drawerSearch}"
                   </div>
                 ) : (
-                  filteredNavItems.map((item) => {
+                  filteredNavItems.map((item, idx) => {
                     const Icon = item.icon;
                     const isActive = activeMenu === item.id;
+                    const showCategoryHeader =
+                      selectedDrawerCat === 'Semua' &&
+                      !drawerSearch &&
+                      (idx === 0 || filteredNavItems[idx - 1].category !== item.category);
+
                     return (
-                      <button
-                        key={item.id}
-                        onClick={() => {
-                          handleNavigate(item.id);
-                          setIsNavDrawerOpen(false);
-                        }}
-                        className={`w-full flex items-start gap-3 p-3 rounded-2xl transition-all text-left border ${
-                          isActive
-                            ? 'bg-sky-600 text-white border-sky-500 shadow-md ring-2 ring-sky-300'
-                            : 'bg-white hover:bg-sky-50 text-slate-800 border-sky-100 hover:border-sky-300'
-                        }`}
-                      >
-                        <div
-                          className={`p-2.5 rounded-xl shrink-0 ${
-                            isActive ? 'bg-white/20 text-white' : 'bg-sky-100 text-sky-700'
+                      <React.Fragment key={item.id}>
+                        {showCategoryHeader && (
+                          <div className="pt-2 pb-1 text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-sky-400" />
+                            <span>Kategori: {item.category}</span>
+                            <div className="flex-1 border-t border-slate-100" />
+                          </div>
+                        )}
+                        <button
+                          onClick={() => {
+                            handleNavigate(item.id);
+                            setIsNavDrawerOpen(false);
+                          }}
+                          className={`w-full flex items-start gap-3 p-3 rounded-2xl transition-all text-left border ${
+                            isActive
+                              ? 'bg-sky-600 text-white border-sky-500 shadow-md ring-2 ring-sky-300'
+                              : 'bg-white hover:bg-sky-50 text-slate-800 border-sky-100 hover:border-sky-300'
                           }`}
                         >
-                          <Icon size={18} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between">
-                            <span className="font-bold text-sm leading-snug">{item.label}</span>
-                            <span
-                              className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                                isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
-                              }`}
-                            >
-                              {item.category}
-                            </span>
-                          </div>
-                          <p
-                            className={`text-xs mt-0.5 line-clamp-1 ${
-                              isActive ? 'text-sky-100' : 'text-slate-500'
+                          <div
+                            className={`p-2.5 rounded-xl shrink-0 ${
+                              isActive ? 'bg-white/20 text-white' : 'bg-sky-100 text-sky-700'
                             }`}
                           >
-                            {item.desc}
-                          </p>
-                        </div>
-                      </button>
+                            <Icon size={18} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold text-sm leading-snug">{item.label}</span>
+                              <span
+                                className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                                  isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+                                }`}
+                              >
+                                {item.category}
+                              </span>
+                            </div>
+                            <p
+                              className={`text-xs mt-0.5 line-clamp-1 ${
+                                isActive ? 'text-sky-100' : 'text-slate-500'
+                              }`}
+                            >
+                              {item.desc}
+                            </p>
+                          </div>
+                        </button>
+                      </React.Fragment>
                     );
                   })
                 )}
@@ -515,50 +552,58 @@ export default function App() {
                   Platform pembelajaran interaktif Kurikulum Merdeka Fase E & F di <b>SMA Negeri 1 Mande (SMANDE)</b>. Dilengkapi materi berbasis HOTS, 5 game edukasi, kuis penilaian otomatis, simulasi demokrasi, serta asisten AI Tutor Pintar Garuda.
                 </p>
 
-                <div className="flex flex-wrap items-center gap-3 pt-2">
-                  <button
-                    onClick={() => {
-                      setActiveMenu('materi');
-                      sound.playClick();
-                    }}
-                    className="flex items-center gap-2 px-6 py-3 bg-white hover:bg-sky-50 text-sky-700 font-extrabold text-xs md:text-sm rounded-xl shadow-lg transition-all transform hover:scale-105 active:scale-95"
-                  >
-                    <span>Mulai Belajar Materi</span>
-                    <ArrowRight size={16} />
-                  </button>
+                {/* Structured Action Buttons in Hero Banner */}
+                <div className="space-y-3 pt-2">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <button
+                      onClick={() => {
+                        setActiveMenu('materi');
+                        sound.playClick();
+                      }}
+                      className="flex items-center gap-2 px-6 py-3.5 bg-white hover:bg-sky-50 text-sky-700 font-extrabold text-xs md:text-sm rounded-2xl shadow-xl transition-all transform hover:scale-105 active:scale-95 border-2 border-white"
+                    >
+                      <span>Mulai Belajar Materi (Fase E & F)</span>
+                      <ArrowRight size={16} />
+                    </button>
 
-                  <button
-                    onClick={() => {
-                      setActiveMenu('game');
-                      sound.playClick();
-                    }}
-                    className="flex items-center gap-2 px-6 py-3 bg-sky-700/80 hover:bg-sky-700 border border-sky-400 text-white font-bold text-xs md:text-sm rounded-xl transition-all"
-                  >
-                    <Gamepad2 size={16} className="text-amber-300" />
-                    <span>Mainkan Game Edukasi</span>
-                  </button>
+                    <button
+                      onClick={() => {
+                        setIsNavDrawerOpen(true);
+                        sound.playClick();
+                      }}
+                      className="flex items-center gap-2 px-5 py-3.5 bg-amber-400 hover:bg-amber-300 text-sky-950 font-black text-xs md:text-sm rounded-2xl shadow-xl transition-all transform hover:scale-105 active:scale-95 border-2 border-amber-300"
+                    >
+                      <Menu size={16} className="text-sky-950 stroke-[2.5]" />
+                      <span>Buka 17 Menu Navigasi</span>
+                    </button>
+                  </div>
 
-                  <button
-                    onClick={() => {
-                      setActiveMenu('simulasi');
-                      sound.playClick();
-                    }}
-                    className="flex items-center gap-2 px-5 py-3 bg-amber-400 hover:bg-amber-300 text-sky-950 font-bold text-xs md:text-sm rounded-xl shadow-md transition-all"
-                  >
-                    <Vote size={16} />
-                    <span>Simulasi Pemilu & Sidang</span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setActiveMenu('glosarium');
-                      sound.playClick();
-                    }}
-                    className="flex items-center gap-2 px-5 py-3 bg-sky-800/80 hover:bg-sky-700 border border-sky-300 text-white font-bold text-xs md:text-sm rounded-xl transition-all shadow-sm"
-                  >
-                    <BookMarked size={16} className="text-amber-300" />
-                    <span>Glosarium Istilah</span>
-                  </button>
+                  {/* Quick Feature Chips for Fast Exploration */}
+                  <div className="flex flex-wrap items-center gap-2 pt-1 text-xs font-bold text-sky-100">
+                    <span className="text-[11px] text-sky-200 opacity-90 hidden sm:inline">Pintas Cepat:</span>
+                    {[
+                      { id: 'game', label: '5 Game Edukasi', icon: Gamepad2 },
+                      { id: 'objek3d', label: 'Objek 3D 4 Pilar', icon: Box },
+                      { id: 'simulasi', label: 'Simulasi Demokrasi', icon: Vote },
+                      { id: 'glosarium', label: 'Glosarium A-Z', icon: BookMarked },
+                      { id: 'kuis', label: 'Kuis Interaktif', icon: CheckSquare },
+                    ].map((p) => {
+                      const Icon = p.icon;
+                      return (
+                        <button
+                          key={p.id}
+                          onClick={() => {
+                            setActiveMenu(p.id);
+                            sound.playClick();
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-white border border-white/20 transition-all text-xs font-bold backdrop-blur-xs active:scale-95"
+                        >
+                          <Icon size={13} className="text-amber-300" />
+                          <span>{p.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
@@ -576,6 +621,174 @@ export default function App() {
                 sound.playClick();
               }}
             />
+
+            {/* PUSAT NAVIGASI & PELUNCUR FITUR TERSTRUKTUR (Structured Navigation Hub) */}
+            <div className="bg-white border-2 border-sky-200/90 rounded-3xl p-6 md:p-8 shadow-xl shadow-sky-100 space-y-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-sky-100 pb-4">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-100 text-sky-800 text-xs font-bold mb-1.5">
+                    <Compass size={14} className="text-sky-600" />
+                    <span>Pusat Navigasi & Peluncur Pembelajaran Terstruktur</span>
+                  </div>
+                  <h3 className="text-xl md:text-2xl font-black text-slate-800">
+                    Pilih Jalur Belajar yang Ingin Anda Nikmati
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium">
+                    17 fitur terorganisir rapi dalam 4 pilar navigasi untuk kenyamanan pengunjung di SMA Negeri 1 Mande.
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setIsNavDrawerOpen(true);
+                    sound.playClick();
+                  }}
+                  className="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 shrink-0 active:scale-95"
+                >
+                  <Menu size={16} />
+                  <span>Daftar Menu Vertikal (17)</span>
+                </button>
+              </div>
+
+              {/* 4 Structured Navigation Pillars / Zones */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Zone 1: Materi & Literasi */}
+                <div className="bg-gradient-to-b from-sky-50/80 to-white rounded-2xl p-4 border border-sky-200 flex flex-col justify-between space-y-3">
+                  <div className="space-y-1">
+                    <div className="text-[11px] font-black uppercase tracking-wider text-sky-800 flex items-center gap-1.5">
+                      <BookOpen size={14} className="text-sky-600" />
+                      <span>1. Materi & Literasi</span>
+                    </div>
+                    <p className="text-[11px] text-slate-500">Bahan ajar resmi Kurikulum Merdeka Fase E & F.</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    {[
+                      { id: 'materi', label: 'Modul Materi X, XI, XII', desc: 'Capaian Pembelajaran & LKPD', icon: BookOpen },
+                      { id: 'video', label: 'Video Animasi Interaktif', desc: 'Visualisasi kasus & studi', icon: Play },
+                      { id: 'elibrary', label: 'E-Library Kemdikbud', desc: 'Buku teks & pasal UUD 1945', icon: Library },
+                      { id: 'glosarium', label: 'Glosarium Pancasila A-Z', desc: 'Kamus istilah & flashcard', icon: BookMarked },
+                    ].map((btn) => (
+                      <button
+                        key={btn.id}
+                        onClick={() => {
+                          setActiveMenu(btn.id);
+                          sound.playClick();
+                        }}
+                        className="w-full p-2.5 rounded-xl bg-white hover:bg-sky-600 text-slate-700 hover:text-white border border-sky-100 hover:border-sky-600 transition-all text-left shadow-2xs group flex items-center justify-between"
+                      >
+                        <div className="min-w-0 pr-1">
+                          <div className="font-bold text-xs truncate group-hover:text-white">{btn.label}</div>
+                          <div className="text-[10px] text-slate-400 group-hover:text-sky-100 truncate">{btn.desc}</div>
+                        </div>
+                        <ChevronRight size={14} className="text-slate-300 group-hover:text-white group-hover:translate-x-0.5 transition-transform shrink-0" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Zone 2: Interaktif & 3D */}
+                <div className="bg-gradient-to-b from-amber-50/80 to-white rounded-2xl p-4 border border-amber-200 flex flex-col justify-between space-y-3">
+                  <div className="space-y-1">
+                    <div className="text-[11px] font-black uppercase tracking-wider text-amber-900 flex items-center gap-1.5">
+                      <Gamepad2 size={14} className="text-amber-600" />
+                      <span>2. Interaktif & 3D</span>
+                    </div>
+                    <p className="text-[11px] text-slate-500">Belajar asyik sambil bermain dan eksplorasi visual.</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    {[
+                      { id: 'game', label: '5 Game Edukasi Pancasila', desc: 'Platformer, Detektif, Puzzle', icon: Gamepad2 },
+                      { id: 'objek3d', label: 'Objek 3D 4 Pilar', desc: 'Garuda, UUD, Bhinneka, NKRI', icon: Box },
+                      { id: 'simulasi', label: 'Simulasi Demokrasi', desc: 'Sidang PPKI & Pemilu OSIS', icon: Vote },
+                      { id: 'nusantara', label: 'Peta Budaya 38 Provinsi', desc: 'Eksplorasi adat Nusantara', icon: Compass },
+                    ].map((btn) => (
+                      <button
+                        key={btn.id}
+                        onClick={() => {
+                          setActiveMenu(btn.id);
+                          sound.playClick();
+                        }}
+                        className="w-full p-2.5 rounded-xl bg-white hover:bg-amber-500 text-slate-700 hover:text-sky-950 border border-amber-100 hover:border-amber-400 transition-all text-left shadow-2xs group flex items-center justify-between"
+                      >
+                        <div className="min-w-0 pr-1">
+                          <div className="font-bold text-xs truncate group-hover:text-sky-950">{btn.label}</div>
+                          <div className="text-[10px] text-slate-400 group-hover:text-sky-900 truncate">{btn.desc}</div>
+                        </div>
+                        <ChevronRight size={14} className="text-slate-300 group-hover:text-sky-950 group-hover:translate-x-0.5 transition-transform shrink-0" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Zone 3: Asesmen & Prestasi */}
+                <div className="bg-gradient-to-b from-emerald-50/80 to-white rounded-2xl p-4 border border-emerald-200 flex flex-col justify-between space-y-3">
+                  <div className="space-y-1">
+                    <div className="text-[11px] font-black uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
+                      <CheckSquare size={14} className="text-emerald-600" />
+                      <span>3. Asesmen & Prestasi</span>
+                    </div>
+                    <p className="text-[11px] text-slate-500">Uji kompetensi, evaluasi nilai & lencana.</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    {[
+                      { id: 'kuis', label: 'Kuis Interaktif 7 Jenis', desc: 'Penilaian langsung & pembahasan', icon: CheckSquare },
+                      { id: 'bankSoal', label: 'Bank Soal Asesmen HOTS', desc: 'Latihan soal per tingkat kesulitan', icon: Brain },
+                      { id: 'kompetisi', label: 'Kompetisi & Lencana', desc: 'Peringkat siswa & badge digital', icon: Award },
+                      { id: 'profil', label: 'Profil Siswa Pancasila', desc: 'Portofolio capaian & riwayat', icon: User },
+                    ].map((btn) => (
+                      <button
+                        key={btn.id}
+                        onClick={() => {
+                          setActiveMenu(btn.id);
+                          sound.playClick();
+                        }}
+                        className="w-full p-2.5 rounded-xl bg-white hover:bg-emerald-600 text-slate-700 hover:text-white border border-emerald-100 hover:border-emerald-600 transition-all text-left shadow-2xs group flex items-center justify-between"
+                      >
+                        <div className="min-w-0 pr-1">
+                          <div className="font-bold text-xs truncate group-hover:text-white">{btn.label}</div>
+                          <div className="text-[10px] text-slate-400 group-hover:text-emerald-100 truncate">{btn.desc}</div>
+                        </div>
+                        <ChevronRight size={14} className="text-slate-300 group-hover:text-white group-hover:translate-x-0.5 transition-transform shrink-0" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Zone 4: Kolaborasi & Sekolah */}
+                <div className="bg-gradient-to-b from-indigo-50/80 to-white rounded-2xl p-4 border border-indigo-200 flex flex-col justify-between space-y-3">
+                  <div className="space-y-1">
+                    <div className="text-[11px] font-black uppercase tracking-wider text-indigo-900 flex items-center gap-1.5">
+                      <MessageSquare size={14} className="text-indigo-600" />
+                      <span>4. Kolaborasi & Informasi</span>
+                    </div>
+                    <p className="text-[11px] text-slate-500">Ruang musyawarah, agenda & panel pengampu.</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    {[
+                      { id: 'forum', label: 'Forum Musyawarah Kelas', desc: 'Diskusi kasus & etika berbangsa', icon: MessageSquare },
+                      { id: 'agenda', label: 'Agenda & Hari Nasional', desc: 'Jadwal belajar & kalender HUT', icon: Calendar },
+                      { id: 'dashboardGuru', label: 'Dashboard Guru Pengampu', desc: 'Kelola soal & ekspor nilai', icon: UserCheck },
+                      { id: 'tentang', label: 'Profil SMANDE & Pengembang', desc: 'Identitas sekolah & kontak', icon: Info },
+                    ].map((btn) => (
+                      <button
+                        key={btn.id}
+                        onClick={() => {
+                          setActiveMenu(btn.id);
+                          sound.playClick();
+                        }}
+                        className="w-full p-2.5 rounded-xl bg-white hover:bg-indigo-600 text-slate-700 hover:text-white border border-indigo-100 hover:border-indigo-600 transition-all text-left shadow-2xs group flex items-center justify-between"
+                      >
+                        <div className="min-w-0 pr-1">
+                          <div className="font-bold text-xs truncate group-hover:text-white">{btn.label}</div>
+                          <div className="text-[10px] text-slate-400 group-hover:text-indigo-100 truncate">{btn.desc}</div>
+                        </div>
+                        <ChevronRight size={14} className="text-slate-300 group-hover:text-white group-hover:translate-x-0.5 transition-transform shrink-0" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
 
             {/* Sambutan & Profil Guru Pengampu */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
@@ -1241,6 +1454,11 @@ export default function App() {
               }));
             }}
           />
+        )}
+
+        {/* ================= OBJEK 3D 4 PILAR ================= */}
+        {activeMenu === 'objek3d' && (
+          <ThreeDimensionalViewer />
         )}
 
         {/* ================= 9. PETA NUSANTARA ================= */}
