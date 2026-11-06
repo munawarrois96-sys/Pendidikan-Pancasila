@@ -24,11 +24,13 @@ import { AITutorModal } from './components/AITutorModal';
 import { InteractiveVideoPlayer } from './components/InteractiveVideoPlayer';
 import { NavigationWindowFrame } from './components/NavigationWindowFrame';
 import { ClockWidget } from './components/ClockWidget';
+import { GlossaryView } from './components/GlossaryView';
 
 // Icons
 import {
   Home,
   BookOpen,
+  BookMarked,
   Play,
   Gamepad2,
   CheckSquare,
@@ -155,6 +157,7 @@ export default function App() {
     { id: 'simulasi', label: 'Simulasi Demokrasi', icon: Vote, category: 'Interaktif', desc: 'Sidang PPKI, Musyawarah Kelas, OSIS & MK' },
     { id: 'nusantara', label: 'Peta Nusantara', icon: Compass, category: 'Kebinekaan', desc: 'Eksplorasi budaya dan gotong royong 38 provinsi' },
     { id: 'elibrary', label: 'E-Library', icon: Library, category: 'Referensi', desc: 'Buku Kemdikbud, UUD 1945, 45 Butir Sila' },
+    { id: 'glosarium', label: 'Glosarium Pancasila', icon: BookMarked, category: 'Referensi', desc: 'Kamus istilah lengkap Pancasila, konstitusi, hukum & demokrasi' },
     { id: 'forum', label: 'Forum Diskusi', icon: MessageSquare, category: 'Komunitas', desc: 'Mimbar musyawarah & refleksi etika berbangsa' },
     { id: 'agenda', label: 'Agenda & Tugas', icon: Calendar, category: 'Sekolah', desc: 'Kalender asesmen & hari besar nasional' },
     { id: 'dashboardGuru', label: 'Dashboard Guru', icon: UserCheck, category: 'Manajemen', desc: 'Panel guru, bank soal & rekap ekspor nilai' },
@@ -224,12 +227,12 @@ export default function App() {
                 sound.playClick();
               }}
               className="flex items-center gap-1.5 md:gap-2 px-3 md:px-3.5 py-1.5 bg-white text-sky-800 hover:bg-sky-50 font-extrabold text-xs md:text-sm rounded-xl shadow-md transition-all border border-sky-200 active:scale-95 group shrink-0"
-              title="Buka 15 Menu Pembelajaran (Navigasi Vertikal)"
+              title="Buka 16 Menu Pembelajaran (Navigasi Vertikal)"
             >
               <Menu size={18} className="text-sky-700 stroke-[2.5] group-hover:rotate-6 transition-transform" />
               <span className="font-extrabold">Menu Navigasi</span>
               <span className="text-[10px] bg-sky-100 text-sky-800 font-black px-1.5 py-0.5 rounded-md hidden sm:inline">
-                15 Menu ▾
+                16 Menu ▾
               </span>
             </button>
 
@@ -375,7 +378,7 @@ export default function App() {
 
                 {/* Category Chips Filter */}
                 <div className="flex gap-1.5 overflow-x-auto pb-1 text-[11px] font-bold scrollbar-none">
-                  {['Semua', 'Utama', 'Pembelajaran', 'Interaktif', 'Asesmen', 'Prestasi'].map((cat) => (
+                  {['Semua', 'Utama', 'Pembelajaran', 'Interaktif', 'Asesmen', 'Referensi', 'Prestasi', 'Kebinekaan'].map((cat) => (
                     <button
                       key={cat}
                       onClick={() => setSelectedDrawerCat(cat)}
@@ -391,7 +394,7 @@ export default function App() {
                 </div>
               </div>
 
-              {/* All 15 Menus in Drawer - Single Vertical Stack Downwards */}
+              {/* All 16 Menus in Drawer - Single Vertical Stack Downwards */}
               <div className="flex-1 overflow-y-auto p-4 space-y-2">
                 <div className="text-[11px] font-extrabold uppercase tracking-wider text-sky-800 mb-2 flex items-center justify-between">
                   <span>Daftar Menu Pembelajaran ({filteredNavItems.length}):</span>
@@ -544,6 +547,17 @@ export default function App() {
                   >
                     <Vote size={16} />
                     <span>Simulasi Pemilu & Sidang</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setActiveMenu('glosarium');
+                      sound.playClick();
+                    }}
+                    className="flex items-center gap-2 px-5 py-3 bg-sky-800/80 hover:bg-sky-700 border border-sky-300 text-white font-bold text-xs md:text-sm rounded-xl transition-all shadow-sm"
+                  >
+                    <BookMarked size={16} className="text-amber-300" />
+                    <span>Glosarium Istilah</span>
                   </button>
                 </div>
               </div>
@@ -1237,6 +1251,11 @@ export default function App() {
         {/* ================= 10. E-LIBRARY ================= */}
         {activeMenu === 'elibrary' && (
           <ELibraryView />
+        )}
+
+        {/* ================= GLOSARIUM PANCASILA ================= */}
+        {activeMenu === 'glosarium' && (
+          <GlossaryView />
         )}
 
         {/* ================= 11. FORUM DISKUSI ================= */}
