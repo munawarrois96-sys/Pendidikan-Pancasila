@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { materialsData } from './data/materialsData';
 import { questionsBank } from './data/quizData';
 import { initialAnnouncements } from './data/forumAndAnnouncements';
-import { defaultStudents, defaultTeacher, defaultAdmin } from './utils/userStore';
+import { defaultStudents, defaultTeacher, defaultAdmin, getStoredStudents, saveStoredStudents } from './utils/userStore';
 import { MaterialSection, Question, QuizAttempt, UserProfile, GradeLevel } from './types';
 import { sound } from './utils/audio';
 
@@ -108,10 +108,19 @@ export default function App() {
   const [activeGameTab, setActiveGameTab] = useState<'platformer' | 'speed' | 'detective' | 'pemilu' | 'puzzle'>('platformer');
 
   // User State & Role Switching
-  const [currentUser, setCurrentUser] = useState<UserProfile>(defaultStudents[0]);
+  const [students, setStudents] = useState<UserProfile[]>(getStoredStudents);
+  const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
+    const list = getStoredStudents();
+    return list[0] || defaultStudents[0];
+  });
   const [isSoundMuted, setIsSoundMuted] = useState(false);
   const [isAiTutorOpen, setIsAiTutorOpen] = useState(false);
   const [fontSize, setFontSize] = useState<'standar' | 'besar' | 'ekstra'>('standar');
+
+  const handleUpdateStudents = (newStudents: UserProfile[]) => {
+    setStudents(newStudents);
+    saveStoredStudents(newStudents);
+  };
 
   const toggleSound = () => {
     const next = !isSoundMuted;
@@ -121,7 +130,7 @@ export default function App() {
 
   const handleRoleChange = (role: 'siswa' | 'guru' | 'admin') => {
     sound.playClick();
-    if (role === 'siswa') setCurrentUser(defaultStudents[0]);
+    if (role === 'siswa') setCurrentUser(students[0] || defaultStudents[0]);
     else if (role === 'guru') setCurrentUser(defaultTeacher);
     else setCurrentUser(defaultAdmin);
   };
@@ -1498,7 +1507,7 @@ export default function App() {
 
         {/* ================= 7. KOMPETISI, LENCANA & SERTIFIKAT ================= */}
         {(activeMenu === 'kompetisi' || activeMenu === 'profil') && (
-          <ProfileAndCompetitionsView user={currentUser} />
+          <ProfileAndCompetitionsView user={currentUser} students={students} />
         )}
 
         {/* ================= SIMULASI TKA PENDIDIKAN PANCASILA SMA (30 SOAL) ================= */}
@@ -1649,7 +1658,15 @@ export default function App() {
 
         {/* ================= 13. DASHBOARD GURU ================= */}
         {activeMenu === 'dashboardGuru' && (
-          <TeacherDashboard />
+          <TeacherDashboard
+            students={students}
+            onUpdateStudents={handleUpdateStudents}
+            onNavigateToCertificate={(selectedStd) => {
+              setCurrentUser(selectedStd);
+              setActiveMenu('profil');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
         )}
 
         {/* ================= 15. TENTANG WEBSITE ================= */}

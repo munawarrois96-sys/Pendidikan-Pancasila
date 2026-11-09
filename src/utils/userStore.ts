@@ -212,3 +212,41 @@ export const initialAttempts: QuizAttempt[] = [
     answers: {},
   },
 ];
+
+const STUDENTS_STORAGE_KEY = 'smande_students_store_v1';
+
+export function getStoredStudents(): UserProfile[] {
+  if (typeof window === 'undefined') return defaultStudents;
+  try {
+    const raw = localStorage.getItem(STUDENTS_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (err) {
+    console.error('Error loading stored students:', err);
+  }
+  return defaultStudents;
+}
+
+export function saveStoredStudents(students: UserProfile[]): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(STUDENTS_STORAGE_KEY, JSON.stringify(students));
+  } catch (err) {
+    console.error('Error saving stored students:', err);
+  }
+}
+
+export function resetStoredStudents(): UserProfile[] {
+  if (typeof window === 'undefined') return defaultStudents;
+  try {
+    localStorage.setItem(STUDENTS_STORAGE_KEY, JSON.stringify(defaultStudents));
+  } catch (err) {
+    console.error('Error resetting stored students:', err);
+  }
+  return defaultStudents;
+}
+

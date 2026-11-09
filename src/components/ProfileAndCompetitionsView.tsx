@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserProfile } from '../types';
 import { allBadges, defaultStudents } from '../utils/userStore';
 import { sound } from '../utils/audio';
@@ -13,15 +13,31 @@ import {
   Lock,
   UserCheck,
   Star,
+  Edit3,
+  RotateCcw,
+  User,
+  Check,
 } from 'lucide-react';
 
 interface ProfileProps {
   user: UserProfile;
+  students?: UserProfile[];
   onUpdateUser?: (updated: UserProfile) => void;
 }
 
-export const ProfileAndCompetitionsView: React.FC<ProfileProps> = ({ user }) => {
+export const ProfileAndCompetitionsView: React.FC<ProfileProps> = ({ user, students }) => {
   const [activeTab, setActiveTab] = useState<'profil' | 'lencana' | 'leaderboard' | 'sertifikat'>('profil');
+
+  // Certificate customization state
+  const [recipientName, setRecipientName] = useState(user.name);
+  const [recipientNisn, setRecipientNisn] = useState(user.nisnOrNip);
+  const [recipientClass, setRecipientClass] = useState(user.className || 'Kelas XI-1');
+
+  useEffect(() => {
+    setRecipientName(user.name);
+    setRecipientNisn(user.nisnOrNip);
+    setRecipientClass(user.className || 'Kelas XI-1');
+  }, [user]);
 
   const handlePrintCertificate = () => {
     sound.playVictory();
@@ -233,7 +249,7 @@ export const ProfileAndCompetitionsView: React.FC<ProfileProps> = ({ user }) => 
           </div>
 
           <div className="space-y-3">
-            {[...defaultStudents]
+            {[...(students || defaultStudents)]
               .sort((a, b) => b.points - a.points)
               .map((student, rankIdx) => {
                 const isCurrentUser = student.name === user.name;
@@ -292,70 +308,184 @@ export const ProfileAndCompetitionsView: React.FC<ProfileProps> = ({ user }) => 
       {/* TAB 4: Printable Official Certificate */}
       {activeTab === 'sertifikat' && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-slate-400">
-              Pratinjau sertifikat digital resmi yang dapat dicetak atau disimpan sebagai PDF.
-            </span>
-            <button
-              onClick={handlePrintCertificate}
-              className="flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold text-xs rounded-xl shadow-lg transition-all"
-            >
-              <Printer size={16} /> Cetak / Unduh Sertifikat PDF
-            </button>
+          {/* Certificate Customization & Editing Toolbar */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 shadow-lg no-print">
+            <div className="flex-1 space-y-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-black uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                  <Edit3 size={15} /> Edit Data Nama Penerima Sertifikat:
+                </span>
+                <span className="text-[10px] bg-sky-900/60 text-sky-200 px-2 py-0.5 rounded-full border border-sky-600/40">
+                  Logo Resmi SMANDE
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+                <div className="sm:col-span-2 flex flex-col sm:flex-row gap-2">
+                  <input
+                    type="text"
+                    value={recipientName}
+                    onChange={(e) => setRecipientName(e.target.value)}
+                    placeholder="Ketik nama siswa untuk sertifikat..."
+                    className="flex-1 px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-white text-xs sm:text-sm font-bold focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    title="Ubah Nama Siswa Penerima Sertifikat"
+                  />
+                  {(students || defaultStudents).length > 0 && (
+                    <select
+                      onChange={(e) => {
+                        const chosen = (students || defaultStudents).find((s) => s.id === e.target.value);
+                        if (chosen) {
+                          setRecipientName(chosen.name);
+                          setRecipientNisn(chosen.nisnOrNip);
+                          setRecipientClass(chosen.className || `Kelas ${chosen.grade}-1`);
+                        }
+                      }}
+                      className="px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-slate-300 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-amber-500 max-w-[200px]"
+                    >
+                      <option value="">-- Pilih Nama Siswa --</option>
+                      {(students || defaultStudents).map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name} ({s.className || s.grade})
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={recipientNisn}
+                    onChange={(e) => setRecipientNisn(e.target.value)}
+                    placeholder="NISN Siswa..."
+                    className="w-1/2 px-2.5 py-2 bg-slate-950 border border-slate-700 rounded-xl text-white text-xs font-medium focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    title="Ubah NISN Siswa"
+                  />
+                  <input
+                    type="text"
+                    value={recipientClass}
+                    onChange={(e) => setRecipientClass(e.target.value)}
+                    placeholder="Kelas/Rombel..."
+                    className="w-1/2 px-2.5 py-2 bg-slate-950 border border-slate-700 rounded-xl text-white text-xs font-medium focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    title="Ubah Kelas/Rombel Siswa"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0 self-end md:self-center">
+              <button
+                onClick={() => {
+                  setRecipientName(user.name);
+                  setRecipientNisn(user.nisnOrNip);
+                  setRecipientClass(user.className || 'Kelas XI-1');
+                  sound.playClick();
+                }}
+                className="px-3 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition-colors flex items-center gap-1"
+                title="Kembalikan ke data siswa aktif saat ini"
+              >
+                <RotateCcw size={13} />
+                <span>Reset</span>
+              </button>
+
+              <button
+                onClick={handlePrintCertificate}
+                className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-lg transition-all active:scale-95"
+              >
+                <Printer size={16} />
+                <span>Cetak / Unduh PDF</span>
+              </button>
+            </div>
           </div>
 
           {/* Certificate Container with Indonesian Official Styling */}
           <div
             id="print-certificate"
-            className="bg-amber-50 text-slate-900 border-8 border-double border-amber-700/80 rounded-3xl p-8 md:p-12 shadow-2xl relative overflow-hidden max-w-4xl mx-auto"
+            className="bg-amber-50 text-slate-900 border-8 border-double border-amber-700/80 rounded-3xl p-6 sm:p-10 md:p-12 shadow-2xl relative overflow-hidden max-w-4xl mx-auto"
           >
-            {/* Watermark Garuda */}
+            {/* Watermark Garuda Background */}
             <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none select-none text-9xl">
               🇮🇩
             </div>
 
-            <div className="text-center mb-6">
-              <div className="text-4xl mb-2">🦅</div>
-              <h4 className="text-xs md:text-sm uppercase tracking-widest text-sky-900 font-extrabold">
-                PEMERINTAH PROVINSI JAWA BARAT • DINAS PENDIDIKAN
-              </h4>
-              <h2 className="text-lg md:text-xl font-black text-slate-900 mt-0.5">
-                SMA NEGERI 1 MANDE (SMANDE)
-              </h2>
-              <p className="text-[10px] md:text-xs text-slate-600 border-b-2 border-sky-800/40 pb-3 mt-1 max-w-lg mx-auto">
-                Jl. Arya Wiratanudatar KM 8, Mande, Kab. Cianjur • Akreditasi A • Kurikulum Merdeka
-              </p>
+            {/* Official School Header with Uploaded Logo SMA Negeri 1 Mande */}
+            <div className="flex items-center justify-between gap-4 sm:gap-6 mb-4 border-b-2 border-sky-950/40 pb-4">
+              {/* Left: Official School Logo SMANDE */}
+              <div className="w-16 h-16 sm:w-20 sm:h-20 shrink-0 flex items-center justify-center">
+                <img
+                  src="/assets/aistudio/WhatsApp_Image_2026-07-14_at_09.41.14__3__e6c1caac.jpeg"
+                  alt="Logo Resmi SMA Negeri 1 Mande"
+                  className="w-full h-full object-contain drop-shadow-md"
+                />
+              </div>
+
+              {/* Center: Educational Institutional Hierarchy */}
+              <div className="text-center flex-1">
+                <h4 className="text-[11px] sm:text-xs uppercase tracking-widest text-sky-950 font-black">
+                  PEMERINTAH PROVINSI JAWA BARAT • DINAS PENDIDIKAN
+                </h4>
+                <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900 tracking-tight my-0.5">
+                  SMA NEGERI 1 MANDE (SMANDE)
+                </h2>
+                <p className="text-[10px] sm:text-[11px] text-slate-700 font-medium">
+                  Jl. Arya Wiratanudatar KM 8, Kec. Mande, Kab. Cianjur, Jawa Barat 43292
+                </p>
+                <p className="text-[10px] text-slate-500">
+                  NPSN: 20203893 • Akreditasi A • Kurikulum Merdeka
+                </p>
+              </div>
+
+              {/* Right: Portal Logo Ruang Pendidikan Pancasila */}
+              <div className="w-16 h-16 sm:w-20 sm:h-20 shrink-0 hidden sm:flex items-center justify-center">
+                <img
+                  src="/assets/aistudio/Logo_Pembelajaran_Interaktif_Pendidikan_Pancasila__1__a1b85239.png"
+                  alt="Logo Pembelajaran Pendidikan Pancasila"
+                  className="w-full h-full object-contain drop-shadow-md"
+                />
+              </div>
             </div>
 
+            {/* Certificate Title */}
             <div className="text-center my-6">
-              <span className="text-xs uppercase tracking-widest text-sky-800 font-bold block mb-1">
+              <span className="text-xs sm:text-sm uppercase tracking-widest text-sky-900 font-black block mb-1">
                 SERTIFIKAT PENGHARGAAN PEMBELAJARAN
               </span>
-              <p className="text-xs text-slate-600 italic">Nomor: 421.3 / SMANDE / PPKn / 2026</p>
-              <p className="text-xs text-slate-700 mt-4">Diberikan dengan penuh kehormatan kepada:</p>
-              <h1 className="text-2xl md:text-4xl font-extrabold text-sky-900 my-2 font-serif underline decoration-sky-500">
-                {user.name}
-              </h1>
-              <p className="text-xs font-semibold text-slate-700">
-                NISN: {user.nisnOrNip} • Kelas: {user.className || 'XI-1'}
+              <p className="text-xs text-slate-600 italic">
+                Nomor: 421.3 / SMANDE / PEND.PANCASILA / {new Date().getFullYear()}
+              </p>
+              <p className="text-xs text-slate-700 mt-4 font-serif">
+                Diberikan dengan penuh kehormatan dan kebanggaan kepada:
+              </p>
+
+              {/* Recipient Name - Editable in preview & printed clearly */}
+              <div className="my-2.5">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-sky-950 font-serif underline decoration-sky-600 tracking-tight">
+                  {recipientName || user.name}
+                </h1>
+              </div>
+
+              <p className="text-xs font-semibold text-slate-800">
+                NISN: {recipientNisn || user.nisnOrNip} • {recipientClass || user.className || 'Kelas XI-1'}
               </p>
             </div>
 
-            <p className="text-xs md:text-sm text-slate-800 leading-relaxed text-center max-w-2xl mx-auto mb-8 font-serif">
-              Telah menyelesaikan secara komprehensif seluruh modul pembelajaran, asesmen sumatif otomatis, serta simulasi kehidupan berdemokrasi pada platform digital <b>Pendidikan Pancasila Interaktif SMA Negeri 1 Mande (SMANDE)</b> dengan predikat <b>SANGAT BAIK (TUNTAS PARIPURNA)</b>.
+            {/* Certificate Narrative */}
+            <p className="text-xs sm:text-sm text-slate-800 leading-relaxed text-center max-w-2xl mx-auto mb-8 font-serif">
+              Telah menyelesaikan secara komprehensif seluruh modul pembelajaran, asesmen sumatif otomatis, serta simulasi pengamalan 4 Pilar Kebangsaan pada platform digital <b>Ruang Pendidikan Pancasila Interaktif SMA Negeri 1 Mande (SMANDE)</b> dengan predikat <b>SANGAT BAIK (TUNTAS PARIPURNA)</b>.
             </p>
 
-            <div className="flex justify-between items-end pt-8 border-t border-sky-800/30 text-xs">
+            {/* Signatures */}
+            <div className="flex justify-between items-end pt-8 border-t border-sky-900/30 text-xs">
               <div className="text-center">
                 <span className="text-[11px] text-slate-600 block">Mengetahui,</span>
-                <span className="text-[11px] font-bold text-slate-800 block mb-10">Kepala SMA Negeri 1 Mande</span>
+                <span className="text-[11px] font-bold text-slate-800 block mb-12">Kepala SMA Negeri 1 Mande</span>
                 <div className="font-bold underline text-slate-900">Dr. H. Bambang Suprayitno, M.Pd</div>
                 <span className="text-[10px] text-slate-600">NIP. 19680312 199303 1 004</span>
               </div>
 
               <div className="text-center">
-                <span className="text-[11px] text-slate-600 block">Mande, Cianjur, 01 November 2026</span>
-                <span className="text-[11px] font-bold text-slate-800 block mb-10">Guru Pengampu Pendidikan Pancasila</span>
+                <span className="text-[11px] text-slate-600 block">Mande, Cianjur, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                <span className="text-[11px] font-bold text-slate-800 block mb-12">Guru Pengampu Pendidikan Pancasila</span>
                 <div className="font-bold underline text-slate-900">Munawar Rois, S.Pd.</div>
                 <span className="text-[10px] text-slate-600">NIP. 19710815 199802 1 004</span>
               </div>
