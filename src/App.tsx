@@ -27,6 +27,7 @@ import { ClockWidget } from './components/ClockWidget';
 import { GlossaryView } from './components/GlossaryView';
 import { ThreeDimensionalViewer } from './components/ThreeDimensionalViewer';
 import { NationalGalleryView } from './components/NationalGalleryView';
+import { TkaSimulationView } from './components/TkaSimulationView';
 
 // Icons
 import {
@@ -150,9 +151,10 @@ export default function App() {
   const [drawerSearch, setDrawerSearch] = useState('');
   const [selectedDrawerCat, setSelectedDrawerCat] = useState('Semua');
 
-  // 19 Main Navigation Items with categories for clear visitor navigation
+  // 20 Main Navigation Items with categories for clear visitor navigation
   const navItems = [
     { id: 'beranda', label: 'Beranda', icon: Home, category: 'Utama', desc: 'Sambutan guru, profil sekolah, dan gambaran umum' },
+    { id: 'simulasiTka', label: 'Simulasi TKA Pancasila (30 Soal)', icon: GraduationCap, category: 'Asesmen', desc: 'Simulasi TKA SMA (PPKn/PKN) 30 Soal HOTS Kelas 12 (4 Elemen)' },
     { id: 'materi', label: 'Materi Belajar', icon: BookOpen, category: 'Pembelajaran', desc: 'Modul Kurikulum Merdeka Kelas X, XI, XII' },
     { id: 'video', label: 'Video Animasi', icon: Play, category: 'Pembelajaran', desc: 'Video pembelajaran interaktif & studi kasus' },
     { id: 'galeriPresiden', label: 'Galeri Presiden (1-8)', icon: Landmark, category: 'Wawasan', desc: 'Biografi, peninggalan & warisan Presiden RI ke-1 s.d. ke-8' },
@@ -193,7 +195,7 @@ export default function App() {
           <div className="bg-white w-1/2 h-full" />
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 min-h-16 py-2 flex flex-wrap items-center justify-between gap-2.5">
           {/* Logo Brand with Uploaded Official Logo */}
           <div
             onClick={() => {
@@ -201,7 +203,7 @@ export default function App() {
               setSelectedMaterial(null);
               sound.playClick();
             }}
-            className="flex items-center gap-2.5 md:gap-3 cursor-pointer group select-none"
+            className="flex items-center gap-2.5 md:gap-3 cursor-pointer group select-none shrink-0"
           >
             <div className="w-11 h-11 md:w-12 md:h-12 rounded-2xl bg-white p-1 shadow-md group-hover:scale-105 transition-transform flex items-center justify-center overflow-hidden border border-sky-300 shrink-0">
               <img
@@ -225,8 +227,8 @@ export default function App() {
             </div>
           </div>
 
-          {/* User Quick Info & Action Controls */}
-          <div className="flex items-center gap-2">
+          {/* User Quick Info & Action Controls - All kept strictly inside sky blue header */}
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-end">
             {/* Real-time Clock, Day & Date Widget in Header */}
             <ClockWidget variant="header" />
 
@@ -236,23 +238,23 @@ export default function App() {
                 setIsNavDrawerOpen(true);
                 sound.playClick();
               }}
-              className="flex items-center gap-1.5 md:gap-2 px-3 md:px-3.5 py-1.5 bg-white text-sky-800 hover:bg-sky-50 font-extrabold text-xs md:text-sm rounded-xl shadow-md transition-all border border-sky-200 active:scale-95 group shrink-0"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white text-sky-800 hover:bg-sky-50 font-extrabold text-xs sm:text-sm rounded-xl shadow-md transition-all border border-sky-200 active:scale-95 group shrink-0"
               title={`Buka ${navItems.length} Menu Pembelajaran (Navigasi Vertikal)`}
             >
-              <Menu size={18} className="text-sky-700 stroke-[2.5] group-hover:rotate-6 transition-transform" />
+              <Menu size={17} className="text-sky-700 stroke-[2.5] group-hover:rotate-6 transition-transform" />
               <span className="font-extrabold">Menu Navigasi</span>
-              <span className="text-[10px] bg-sky-100 text-sky-800 font-black px-1.5 py-0.5 rounded-md hidden sm:inline">
+              <span className="text-[10px] bg-sky-100 text-sky-800 font-black px-1.5 py-0.5 rounded-md hidden md:inline">
                 {navItems.length} Menu ▾
               </span>
             </button>
 
             {/* Role Switcher Pill */}
-            <div className="hidden lg:flex items-center gap-1 bg-sky-700/80 border border-sky-400/40 p-1 rounded-xl text-xs">
+            <div className="hidden xl:flex items-center gap-1 bg-sky-700/80 border border-sky-400/40 p-1 rounded-xl text-xs shrink-0">
               {(['siswa', 'guru', 'admin'] as const).map((r) => (
                 <button
                   key={r}
                   onClick={() => handleRoleChange(r)}
-                  className={`px-2.5 py-1 rounded-lg capitalize font-bold transition-all ${
+                  className={`px-2 py-0.5 rounded-lg capitalize font-bold transition-all ${
                     currentUser.role === r
                       ? 'bg-white text-sky-700 shadow-sm'
                       : 'text-sky-100 hover:text-white'
@@ -267,9 +269,9 @@ export default function App() {
             <button
               onClick={toggleSound}
               title={isSoundMuted ? 'Nyalakan Audio SFX' : 'Bisukan Audio SFX'}
-              className="p-2 rounded-xl bg-sky-700 hover:bg-sky-500 text-white transition-colors border border-sky-400/50"
+              className="p-1.5 sm:p-2 rounded-xl bg-sky-700 hover:bg-sky-500 text-white transition-colors border border-sky-400/50 shrink-0"
             >
-              {isSoundMuted ? <VolumeX size={17} /> : <Volume2 size={17} />}
+              {isSoundMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
             </button>
 
             {/* Font Size Accessibility Controller */}
@@ -293,27 +295,27 @@ export default function App() {
                 setIsAiTutorOpen(true);
                 sound.playClick();
               }}
-              className="flex items-center gap-1.5 px-2.5 md:px-3 py-1.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-sky-950 font-black text-xs rounded-xl shadow-md transition-all transform hover:scale-105 active:scale-95 border border-amber-300"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-sky-950 font-black text-xs rounded-xl shadow-md transition-all transform hover:scale-105 active:scale-95 border border-amber-300 shrink-0"
             >
               <Bot size={16} />
-              <span className="hidden md:inline">Tutor Garuda</span>
-              <span className="md:hidden">AI</span>
+              <span>Tutor Garuda</span>
             </button>
 
-            {/* Current User Avatar */}
+            {/* Current User Avatar & Nama Siswa */}
             <div
               onClick={() => {
                 setActiveMenu('profil');
                 sound.playClick();
               }}
-              className="flex items-center gap-1.5 md:gap-2 cursor-pointer bg-sky-700/90 hover:bg-sky-700 border border-sky-400/60 px-2.5 py-1.5 rounded-xl transition-all shadow-sm"
+              className="flex items-center gap-1.5 sm:gap-2 cursor-pointer bg-sky-700/90 hover:bg-sky-700 border border-sky-400/60 px-2.5 py-1.5 rounded-xl transition-all shadow-sm shrink-0"
+              title="Profil Siswa & Peran"
             >
-              <span className="text-base md:text-lg">{currentUser.avatar}</span>
-              <div className="hidden xl:block text-left text-xs">
-                <div className="font-bold text-white leading-tight truncate max-w-[100px]">
+              <span className="text-base sm:text-lg">{currentUser.avatar}</span>
+              <div className="text-left text-xs">
+                <div className="font-bold text-white leading-tight truncate max-w-[85px] sm:max-w-[120px]">
                   {currentUser.name}
                 </div>
-                <div className="text-[10px] text-amber-300 font-semibold">
+                <div className="text-[10px] text-amber-300 font-semibold leading-none">
                   {currentUser.points} Poin
                 </div>
               </div>
@@ -589,6 +591,7 @@ export default function App() {
                   <div className="flex flex-wrap items-center gap-2 pt-1 text-xs font-bold text-sky-100">
                     <span className="text-[11px] text-sky-200 opacity-90 hidden sm:inline">Pintas Cepat:</span>
                     {[
+                      { id: 'simulasiTka', label: 'Simulasi TKA (30 Soal) ⭐', icon: GraduationCap },
                       { id: 'galeriPresiden', label: 'Presiden RI (1-8)', icon: Landmark },
                       { id: 'galeriTokoh', label: 'Tokoh Nasional', icon: Users },
                       { id: 'objek3d', label: 'Objek 3D 4 Pilar', icon: Box },
@@ -605,9 +608,13 @@ export default function App() {
                             setActiveMenu(p.id);
                             sound.playClick();
                           }}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-white border border-white/20 transition-all text-xs font-bold backdrop-blur-xs active:scale-95"
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-all text-xs font-bold backdrop-blur-xs active:scale-95 ${
+                            p.id === 'simulasiTka'
+                              ? 'bg-amber-400 text-sky-950 border-amber-300 shadow-md font-black'
+                              : 'bg-white/15 hover:bg-white/25 text-white border-white/20'
+                          }`}
                         >
-                          <Icon size={13} className="text-amber-300" />
+                          <Icon size={13} className={p.id === 'simulasiTka' ? 'text-sky-950' : 'text-amber-300'} />
                           <span>{p.label}</span>
                         </button>
                       );
@@ -619,6 +626,47 @@ export default function App() {
               {/* Background decorative emblem */}
               <div className="absolute -right-6 -bottom-6 text-[180px] md:text-[240px] opacity-15 pointer-events-none select-none">
                 🦅
+              </div>
+            </div>
+
+            {/* SPESIAL TKA: BANNER SIMULASI TKA PENDIDIKAN PANCASILA SMA (PPKn / PKN) */}
+            <div className="bg-gradient-to-r from-sky-800 via-sky-700 to-blue-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl border-2 border-amber-300/80 relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="space-y-2.5 max-w-2xl z-10">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="bg-amber-400 text-sky-950 font-black text-xs px-3 py-1 rounded-full shadow-sm flex items-center gap-1">
+                    <Sparkles size={13} />
+                    <span>BARU: Simulasi TKA SMA Kelas 12</span>
+                  </span>
+                  <span className="bg-white/20 text-white font-semibold text-xs px-2.5 py-0.5 rounded-full">
+                    Kurikulum Merdeka (Eks PPKn / PKN)
+                  </span>
+                </div>
+                <h3 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight">
+                  Simulasi TKA Pendidikan Pancasila SMA — 30 Soal Standar Ujian
+                </h3>
+                <p className="text-xs sm:text-sm text-sky-100 leading-relaxed">
+                  Terdiri dari <strong>20 Pilihan Ganda</strong>, <strong>5 Kategori Benar/Salah (3 Pernyataan)</strong>, dan <strong>5 Multi Jawaban (3 dari 5 Opsi)</strong>. Menguji 4 Elemen (Pancasila, UUD NRI 1945, Bhinneka Tunggal Ika, NKRI) pada 3 level kognitif: Pemahaman, Penerapan, dan Penalaran (HOTS).
+                </p>
+                <div className="flex items-center gap-3 text-xs text-amber-300 font-bold pt-1 flex-wrap">
+                  <span>⏱️ 60 Menit</span>
+                  <span>•</span>
+                  <span>📊 Skor Instan & Analisis 4 Elemen</span>
+                  <span>•</span>
+                  <span>💡 Pembahasan Mendalam</span>
+                </div>
+              </div>
+
+              <div className="z-10 shrink-0">
+                <button
+                  onClick={() => {
+                    setActiveMenu('simulasiTka');
+                    sound.playClick();
+                  }}
+                  className="px-6 py-3.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-sky-950 font-black text-sm rounded-2xl shadow-xl transition-all transform hover:scale-105 active:scale-95 flex items-center gap-2 border border-amber-300"
+                >
+                  <GraduationCap size={20} />
+                  <span>Mulai Simulasi TKA (30 Soal)</span>
+                </button>
               </div>
             </div>
 
@@ -740,6 +788,7 @@ export default function App() {
                   </div>
                   <div className="space-y-1.5">
                     {[
+                      { id: 'simulasiTka', label: 'Simulasi TKA Pancasila (30 Soal) ⭐', desc: 'Tes Kemampuan Akademik HOTS Kelas 12', icon: GraduationCap },
                       { id: 'game', label: '5 Game Edukasi Pancasila', desc: 'Platformer, Detektif, Puzzle', icon: Gamepad2 },
                       { id: 'simulasi', label: 'Simulasi Demokrasi', desc: 'Sidang PPKI & Pemilu OSIS', icon: Vote },
                       { id: 'kuis', label: 'Kuis Interaktif 7 Jenis', desc: 'Penilaian langsung & pembahasan', icon: CheckSquare },
@@ -1450,6 +1499,19 @@ export default function App() {
         {/* ================= 7. KOMPETISI, LENCANA & SERTIFIKAT ================= */}
         {(activeMenu === 'kompetisi' || activeMenu === 'profil') && (
           <ProfileAndCompetitionsView user={currentUser} />
+        )}
+
+        {/* ================= SIMULASI TKA PENDIDIKAN PANCASILA SMA (30 SOAL) ================= */}
+        {activeMenu === 'simulasiTka' && (
+          <TkaSimulationView
+            onAddPoints={(pts) => {
+              setCurrentUser((p) => ({
+                ...p,
+                points: p.points + pts,
+              }));
+            }}
+            onNavigateHome={() => setActiveMenu('beranda')}
+          />
         )}
 
         {/* ================= 8. SIMULASI DEMOKRASI ================= */}
