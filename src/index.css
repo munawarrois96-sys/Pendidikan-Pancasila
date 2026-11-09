@@ -1,5 +1,44 @@
 @import "tailwindcss";
 
+html {
+  font-size: 18px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 18.5px;
+  }
+}
+
+@media (min-width: 1280px) {
+  html {
+    font-size: 19px;
+  }
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.68;
+  letter-spacing: -0.01em;
+}
+
+/* Ensure minimum readable font sizes for badges and micro-text so visitors read comfortably */
+.text-\[10px\], .text-\[11px\] {
+  font-size: 0.78rem !important; /* ~14.5px */
+  line-height: 1.45 !important;
+}
+.text-xs {
+  font-size: 0.84rem !important; /* ~15.5px */
+  line-height: 1.5 !important;
+}
+.text-sm {
+  font-size: 0.95rem !important; /* ~17.5px */
+  line-height: 1.6 !important;
+}
+
 @keyframes marquee {
   0% {
     transform: translateX(0%);

@@ -13,6 +13,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
+app.use(express.static(path.resolve(__dirname, 'public')));
 
 // Initialize Gemini SDK if API key is present
 const geminiApiKey = process.env.GEMINI_API_KEY;

@@ -26,6 +26,7 @@ import { NavigationWindowFrame } from './components/NavigationWindowFrame';
 import { ClockWidget } from './components/ClockWidget';
 import { GlossaryView } from './components/GlossaryView';
 import { ThreeDimensionalViewer } from './components/ThreeDimensionalViewer';
+import { NationalGalleryView } from './components/NationalGalleryView';
 
 // Icons
 import {
@@ -59,6 +60,8 @@ import {
   Megaphone,
   Heart,
   Search,
+  Landmark,
+  Users,
 } from 'lucide-react';
 
 export default function App() {
@@ -107,7 +110,7 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<UserProfile>(defaultStudents[0]);
   const [isSoundMuted, setIsSoundMuted] = useState(false);
   const [isAiTutorOpen, setIsAiTutorOpen] = useState(false);
-  const [fontSize, setFontSize] = useState<'normal' | 'large'>('normal');
+  const [fontSize, setFontSize] = useState<'standar' | 'besar' | 'ekstra'>('besar');
 
   const toggleSound = () => {
     const next = !isSoundMuted;
@@ -147,11 +150,13 @@ export default function App() {
   const [drawerSearch, setDrawerSearch] = useState('');
   const [selectedDrawerCat, setSelectedDrawerCat] = useState('Semua');
 
-  // 15 Main Navigation Items with categories for clear visitor navigation
+  // 19 Main Navigation Items with categories for clear visitor navigation
   const navItems = [
     { id: 'beranda', label: 'Beranda', icon: Home, category: 'Utama', desc: 'Sambutan guru, profil sekolah, dan gambaran umum' },
     { id: 'materi', label: 'Materi Belajar', icon: BookOpen, category: 'Pembelajaran', desc: 'Modul Kurikulum Merdeka Kelas X, XI, XII' },
     { id: 'video', label: 'Video Animasi', icon: Play, category: 'Pembelajaran', desc: 'Video pembelajaran interaktif & studi kasus' },
+    { id: 'galeriPresiden', label: 'Galeri Presiden (1-8)', icon: Landmark, category: 'Wawasan', desc: 'Biografi, peninggalan & warisan Presiden RI ke-1 s.d. ke-8' },
+    { id: 'galeriTokoh', label: 'Galeri Tokoh Nasional', icon: Users, category: 'Wawasan', desc: 'Perumus Pancasila, pendiri bangsa & pahlawan kemerdekaan' },
     { id: 'game', label: 'Game Edukasi (5)', icon: Gamepad2, category: 'Interaktif', desc: 'Platformer 2D, Kuis Kilat, Detektif, Pemilu, Puzzle' },
     { id: 'kuis', label: 'Kuis Interaktif', icon: CheckSquare, category: 'Asesmen', desc: '7 jenis soal dengan penilaian otomatis' },
     { id: 'bankSoal', label: 'Bank Soal', icon: Brain, category: 'Asesmen', desc: 'Latihan soal HOTS per bab dan tingkat kesulitan' },
@@ -177,7 +182,9 @@ export default function App() {
   });
 
   return (
-    <div className={`min-h-screen bg-gradient-to-b from-sky-100/70 via-sky-50 to-white text-slate-800 flex flex-col font-sans ${fontSize === 'large' ? 'text-lg' : 'text-base'}`}>
+    <div className={`min-h-screen bg-gradient-to-b from-sky-100/70 via-sky-50 to-white text-slate-800 flex flex-col font-sans transition-all duration-200 ${
+      fontSize === 'ekstra' ? 'text-xl leading-relaxed' : fontSize === 'besar' ? 'text-lg leading-relaxed' : 'text-base leading-normal'
+    }`}>
       {/* Top Banner & Header */}
       <header className="sticky top-0 z-40 bg-sky-600 text-white shadow-md border-b border-sky-500">
         {/* Top Flag Strip */}
@@ -223,19 +230,19 @@ export default function App() {
             {/* Real-time Clock, Day & Date Widget in Header */}
             <ClockWidget variant="header" />
 
-            {/* Tombol Garis Tiga (Menu Navigasi) - Membuka Semua 15 Menu ke Bawah */}
+            {/* Tombol Garis Tiga (Menu Navigasi) - Membuka Semua Menu ke Bawah */}
             <button
               onClick={() => {
                 setIsNavDrawerOpen(true);
                 sound.playClick();
               }}
               className="flex items-center gap-1.5 md:gap-2 px-3 md:px-3.5 py-1.5 bg-white text-sky-800 hover:bg-sky-50 font-extrabold text-xs md:text-sm rounded-xl shadow-md transition-all border border-sky-200 active:scale-95 group shrink-0"
-              title="Buka 17 Menu Pembelajaran (Navigasi Vertikal)"
+              title={`Buka ${navItems.length} Menu Pembelajaran (Navigasi Vertikal)`}
             >
               <Menu size={18} className="text-sky-700 stroke-[2.5] group-hover:rotate-6 transition-transform" />
               <span className="font-extrabold">Menu Navigasi</span>
               <span className="text-[10px] bg-sky-100 text-sky-800 font-black px-1.5 py-0.5 rounded-md hidden sm:inline">
-                17 Menu ▾
+                {navItems.length} Menu ▾
               </span>
             </button>
 
@@ -265,13 +272,19 @@ export default function App() {
               {isSoundMuted ? <VolumeX size={17} /> : <Volume2 size={17} />}
             </button>
 
-            {/* Font Size Accessibility */}
+            {/* Font Size Accessibility Controller */}
             <button
-              onClick={() => setFontSize(fontSize === 'normal' ? 'large' : 'normal')}
-              title="Ubah Ukuran Huruf (Aksesibilitas)"
-              className="px-2.5 py-1.5 rounded-xl bg-sky-700 hover:bg-sky-500 text-xs font-bold text-amber-300 border border-sky-400/50 transition-colors hidden xl:block"
+              onClick={() => {
+                sound.playClick();
+                setFontSize((curr) => (curr === 'standar' ? 'besar' : curr === 'besar' ? 'ekstra' : 'standar'));
+              }}
+              title="Ubah Ukuran Huruf Website (Standar, Besar, Ekstra)"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-sky-700 hover:bg-sky-500 text-xs font-bold text-amber-300 border border-sky-400/50 transition-all active:scale-95 shrink-0"
             >
-              {fontSize === 'normal' ? 'A+' : 'A-'}
+              <span className="font-extrabold text-sm leading-none">A+</span>
+              <span className="text-[10px] uppercase font-black text-sky-950 bg-amber-400 px-1.5 py-0.5 rounded shadow-xs hidden sm:inline">
+                {fontSize === 'ekstra' ? 'Ekstra' : fontSize === 'besar' ? 'Besar' : 'Standar'}
+              </span>
             </button>
 
             {/* AI Tutor Floating Trigger */}
@@ -381,37 +394,31 @@ export default function App() {
 
                 {/* Category Chips Filter */}
                 <div className="flex gap-1.5 overflow-x-auto pb-1 text-[11px] font-bold scrollbar-none">
-                  {[
-                    { label: 'Semua', count: navItems.length },
-                    { label: 'Utama', count: 1 },
-                    { label: 'Pembelajaran', count: 2 },
-                    { label: 'Interaktif', count: 3 },
-                    { label: 'Asesmen', count: 2 },
-                    { label: 'Referensi', count: 2 },
-                    { label: 'Kebinekaan', count: 1 },
-                    { label: 'Prestasi', count: 1 },
-                  ].map((cat) => (
-                    <button
-                      key={cat.label}
-                      onClick={() => setSelectedDrawerCat(cat.label)}
-                      className={`px-2.5 py-1 rounded-xl shrink-0 transition-all flex items-center gap-1 ${
-                        selectedDrawerCat === cat.label
-                          ? 'bg-sky-600 text-white shadow-xs'
-                          : 'bg-sky-50 text-sky-800 hover:bg-sky-100 border border-sky-200/60'
-                      }`}
-                    >
-                      <span>{cat.label}</span>
-                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                        selectedDrawerCat === cat.label ? 'bg-sky-700 text-sky-100' : 'bg-sky-200/70 text-sky-900'
-                      }`}>
-                        {cat.count}
-                      </span>
-                    </button>
-                  ))}
+                  {['Semua', ...Array.from(new Set(navItems.map((n) => n.category)))].map((cat) => {
+                    const count = cat === 'Semua' ? navItems.length : navItems.filter((n) => n.category === cat).length;
+                    return (
+                      <button
+                        key={cat}
+                        onClick={() => setSelectedDrawerCat(cat)}
+                        className={`px-2.5 py-1 rounded-xl shrink-0 transition-all flex items-center gap-1 ${
+                          selectedDrawerCat === cat
+                            ? 'bg-sky-600 text-white shadow-xs'
+                            : 'bg-sky-50 text-sky-800 hover:bg-sky-100 border border-sky-200/60'
+                        }`}
+                      >
+                        <span>{cat}</span>
+                        <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                          selectedDrawerCat === cat ? 'bg-sky-700 text-sky-100' : 'bg-sky-200/70 text-sky-900'
+                        }`}>
+                          {count}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
-              {/* All 17 Menus in Drawer - Single Structured Stack Downwards */}
+              {/* All Menus in Drawer - Single Structured Stack Downwards */}
               <div className="flex-1 overflow-y-auto p-4 space-y-2">
                 <div className="text-[11px] font-extrabold uppercase tracking-wider text-sky-800 mb-2 flex items-center justify-between">
                   <span>Daftar Menu Pembelajaran ({filteredNavItems.length}):</span>
@@ -574,7 +581,7 @@ export default function App() {
                       className="flex items-center gap-2 px-5 py-3.5 bg-amber-400 hover:bg-amber-300 text-sky-950 font-black text-xs md:text-sm rounded-2xl shadow-xl transition-all transform hover:scale-105 active:scale-95 border-2 border-amber-300"
                     >
                       <Menu size={16} className="text-sky-950 stroke-[2.5]" />
-                      <span>Buka 17 Menu Navigasi</span>
+                      <span>Buka {navItems.length} Menu Navigasi</span>
                     </button>
                   </div>
 
@@ -582,8 +589,10 @@ export default function App() {
                   <div className="flex flex-wrap items-center gap-2 pt-1 text-xs font-bold text-sky-100">
                     <span className="text-[11px] text-sky-200 opacity-90 hidden sm:inline">Pintas Cepat:</span>
                     {[
-                      { id: 'game', label: '5 Game Edukasi', icon: Gamepad2 },
+                      { id: 'galeriPresiden', label: 'Presiden RI (1-8)', icon: Landmark },
+                      { id: 'galeriTokoh', label: 'Tokoh Nasional', icon: Users },
                       { id: 'objek3d', label: 'Objek 3D 4 Pilar', icon: Box },
+                      { id: 'game', label: '5 Game Edukasi', icon: Gamepad2 },
                       { id: 'simulasi', label: 'Simulasi Demokrasi', icon: Vote },
                       { id: 'glosarium', label: 'Glosarium A-Z', icon: BookMarked },
                       { id: 'kuis', label: 'Kuis Interaktif', icon: CheckSquare },
@@ -634,7 +643,7 @@ export default function App() {
                     Pilih Jalur Belajar yang Ingin Anda Nikmati
                   </h3>
                   <p className="text-xs text-slate-500 font-medium">
-                    17 fitur terorganisir rapi dalam 4 pilar navigasi untuk kenyamanan pengunjung di SMA Negeri 1 Mande.
+                    {navItems.length} fitur terorganisir rapi dalam 4 pilar navigasi untuk kenyamanan pengunjung di SMA Negeri 1 Mande.
                   </p>
                 </div>
 
@@ -646,7 +655,7 @@ export default function App() {
                   className="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 shrink-0 active:scale-95"
                 >
                   <Menu size={16} />
-                  <span>Daftar Menu Vertikal (17)</span>
+                  <span>Daftar Menu Vertikal ({navItems.length})</span>
                 </button>
               </div>
 
@@ -686,20 +695,20 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Zone 2: Interaktif & 3D */}
+                {/* Zone 2: Wawasan Tokoh & 3D */}
                 <div className="bg-gradient-to-b from-amber-50/80 to-white rounded-2xl p-4 border border-amber-200 flex flex-col justify-between space-y-3">
                   <div className="space-y-1">
                     <div className="text-[11px] font-black uppercase tracking-wider text-amber-900 flex items-center gap-1.5">
-                      <Gamepad2 size={14} className="text-amber-600" />
-                      <span>2. Interaktif & 3D</span>
+                      <Landmark size={14} className="text-amber-600" />
+                      <span>2. Wawasan Tokoh & 3D</span>
                     </div>
-                    <p className="text-[11px] text-slate-500">Belajar asyik sambil bermain dan eksplorasi visual.</p>
+                    <p className="text-[11px] text-slate-500">Biografi 8 Presiden RI, pahlawan & 3D 4 Pilar.</p>
                   </div>
                   <div className="space-y-1.5">
                     {[
-                      { id: 'game', label: '5 Game Edukasi Pancasila', desc: 'Platformer, Detektif, Puzzle', icon: Gamepad2 },
+                      { id: 'galeriPresiden', label: 'Galeri Presiden RI (1-8)', desc: 'Biografi, warisan & kuis 8 Presiden', icon: Landmark },
+                      { id: 'galeriTokoh', label: 'Galeri Tokoh Nasional', desc: 'Perumus Pancasila & pendiri bangsa', icon: Users },
                       { id: 'objek3d', label: 'Objek 3D 4 Pilar', desc: 'Garuda, UUD, Bhinneka, NKRI', icon: Box },
-                      { id: 'simulasi', label: 'Simulasi Demokrasi', desc: 'Sidang PPKI & Pemilu OSIS', icon: Vote },
                       { id: 'nusantara', label: 'Peta Budaya 38 Provinsi', desc: 'Eksplorasi adat Nusantara', icon: Compass },
                     ].map((btn) => (
                       <button
@@ -720,21 +729,21 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Zone 3: Asesmen & Prestasi */}
+                {/* Zone 3: Interaktif & Game */}
                 <div className="bg-gradient-to-b from-emerald-50/80 to-white rounded-2xl p-4 border border-emerald-200 flex flex-col justify-between space-y-3">
                   <div className="space-y-1">
                     <div className="text-[11px] font-black uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
-                      <CheckSquare size={14} className="text-emerald-600" />
-                      <span>3. Asesmen & Prestasi</span>
+                      <Gamepad2 size={14} className="text-emerald-600" />
+                      <span>3. Interaktif & Game</span>
                     </div>
-                    <p className="text-[11px] text-slate-500">Uji kompetensi, evaluasi nilai & lencana.</p>
+                    <p className="text-[11px] text-slate-500">5 Game edukasi, kuis interaktif & bank soal HOTS.</p>
                   </div>
                   <div className="space-y-1.5">
                     {[
+                      { id: 'game', label: '5 Game Edukasi Pancasila', desc: 'Platformer, Detektif, Puzzle', icon: Gamepad2 },
+                      { id: 'simulasi', label: 'Simulasi Demokrasi', desc: 'Sidang PPKI & Pemilu OSIS', icon: Vote },
                       { id: 'kuis', label: 'Kuis Interaktif 7 Jenis', desc: 'Penilaian langsung & pembahasan', icon: CheckSquare },
                       { id: 'bankSoal', label: 'Bank Soal Asesmen HOTS', desc: 'Latihan soal per tingkat kesulitan', icon: Brain },
-                      { id: 'kompetisi', label: 'Kompetisi & Lencana', desc: 'Peringkat siswa & badge digital', icon: Award },
-                      { id: 'profil', label: 'Profil Siswa Pancasila', desc: 'Portofolio capaian & riwayat', icon: User },
                     ].map((btn) => (
                       <button
                         key={btn.id}
@@ -765,10 +774,10 @@ export default function App() {
                   </div>
                   <div className="space-y-1.5">
                     {[
+                      { id: 'kompetisi', label: 'Kompetisi & Lencana', desc: 'Peringkat siswa & badge digital', icon: Award },
                       { id: 'forum', label: 'Forum Musyawarah Kelas', desc: 'Diskusi kasus & etika berbangsa', icon: MessageSquare },
                       { id: 'agenda', label: 'Agenda & Hari Nasional', desc: 'Jadwal belajar & kalender HUT', icon: Calendar },
                       { id: 'dashboardGuru', label: 'Dashboard Guru Pengampu', desc: 'Kelola soal & ekspor nilai', icon: UserCheck },
-                      { id: 'tentang', label: 'Profil SMANDE & Pengembang', desc: 'Identitas sekolah & kontak', icon: Info },
                     ].map((btn) => (
                       <button
                         key={btn.id}
@@ -1459,6 +1468,34 @@ export default function App() {
         {/* ================= OBJEK 3D 4 PILAR ================= */}
         {activeMenu === 'objek3d' && (
           <ThreeDimensionalViewer />
+        )}
+
+        {/* ================= GALERI PRESIDEN REPUBLIK INDONESIA ================= */}
+        {activeMenu === 'galeriPresiden' && (
+          <NationalGalleryView
+            initialTab="presiden"
+            onAddPoints={(pts) => {
+              setCurrentUser((p) => ({
+                ...p,
+                points: p.points + pts,
+                badges: Array.from(new Set([...p.badges, 'badge-presiden'])),
+              }));
+            }}
+          />
+        )}
+
+        {/* ================= GALERI TOKOH NASIONAL ================= */}
+        {activeMenu === 'galeriTokoh' && (
+          <NationalGalleryView
+            initialTab="tokoh"
+            onAddPoints={(pts) => {
+              setCurrentUser((p) => ({
+                ...p,
+                points: p.points + pts,
+                badges: Array.from(new Set([...p.badges, 'badge-tokoh'])),
+              }));
+            }}
+          />
         )}
 
         {/* ================= 9. PETA NUSANTARA ================= */}
