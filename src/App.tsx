@@ -110,7 +110,7 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<UserProfile>(defaultStudents[0]);
   const [isSoundMuted, setIsSoundMuted] = useState(false);
   const [isAiTutorOpen, setIsAiTutorOpen] = useState(false);
-  const [fontSize, setFontSize] = useState<'standar' | 'besar' | 'ekstra'>('besar');
+  const [fontSize, setFontSize] = useState<'standar' | 'besar' | 'ekstra'>('standar');
 
   const toggleSound = () => {
     const next = !isSoundMuted;
@@ -183,7 +183,7 @@ export default function App() {
 
   return (
     <div className={`min-h-screen bg-gradient-to-b from-sky-100/70 via-sky-50 to-white text-slate-800 flex flex-col font-sans transition-all duration-200 ${
-      fontSize === 'ekstra' ? 'text-xl leading-relaxed' : fontSize === 'besar' ? 'text-lg leading-relaxed' : 'text-base leading-normal'
+      fontSize === 'ekstra' ? 'text-lg' : fontSize === 'besar' ? 'text-base' : ''
     }`}>
       {/* Top Banner & Header */}
       <header className="sticky top-0 z-40 bg-sky-600 text-white shadow-md border-b border-sky-500">
