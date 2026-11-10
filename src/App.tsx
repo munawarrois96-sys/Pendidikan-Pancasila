@@ -28,6 +28,7 @@ import { GlossaryView } from './components/GlossaryView';
 import { ThreeDimensionalViewer } from './components/ThreeDimensionalViewer';
 import { NationalGalleryView } from './components/NationalGalleryView';
 import { TkaSimulationView } from './components/TkaSimulationView';
+import { TeacherToolkitView } from './components/TeacherToolkitView';
 
 // Icons
 import {
@@ -63,6 +64,7 @@ import {
   Search,
   Landmark,
   Users,
+  Wrench,
 } from 'lucide-react';
 
 export default function App() {
@@ -179,6 +181,7 @@ export default function App() {
     { id: 'glosarium', label: 'Glosarium Pancasila', icon: BookMarked, category: 'Referensi', desc: 'Kamus istilah lengkap Pancasila, konstitusi, hukum & demokrasi' },
     { id: 'forum', label: 'Forum Diskusi', icon: MessageSquare, category: 'Komunitas', desc: 'Mimbar musyawarah & refleksi etika berbangsa' },
     { id: 'agenda', label: 'Agenda & Tugas', icon: Calendar, category: 'Sekolah', desc: 'Kalender asesmen & hari besar nasional' },
+    { id: 'toolGuru', label: 'TOOL Guru (10 Alat)', icon: Wrench, category: 'Manajemen', desc: '10 Alat bantu mengajar: timer, acak nama, kelompok, scan, LJK, jadwal' },
     { id: 'dashboardGuru', label: 'Dashboard Guru', icon: UserCheck, category: 'Manajemen', desc: 'Panel guru, bank soal & rekap ekspor nilai' },
     { id: 'profil', label: 'Profil Siswa', icon: User, category: 'Pengguna', desc: 'Portofolio Profil Pelajar Pancasila & sertifikat' },
     { id: 'tentang', label: 'Tentang Web', icon: Info, category: 'Informasi', desc: 'Profil SMA Negeri 1 Mande & tim pengampu' },
@@ -601,6 +604,7 @@ export default function App() {
                     <span className="text-[11px] text-sky-200 opacity-90 hidden sm:inline">Pintas Cepat:</span>
                     {[
                       { id: 'simulasiTka', label: 'Simulasi TKA (30 Soal) ⭐', icon: GraduationCap },
+                      { id: 'toolGuru', label: 'TOOL Guru (10 Alat) 🛠️', icon: Wrench },
                       { id: 'galeriPresiden', label: 'Presiden RI (1-8)', icon: Landmark },
                       { id: 'galeriTokoh', label: 'Tokoh Nasional', icon: Users },
                       { id: 'objek3d', label: 'Objek 3D 4 Pilar', icon: Box },
@@ -832,10 +836,11 @@ export default function App() {
                   </div>
                   <div className="space-y-1.5">
                     {[
+                      { id: 'toolGuru', label: 'TOOL Guru (10 Alat Bantu) 🛠️', desc: 'Timer, acak nama, scan, LJK, jadwal', icon: Wrench },
                       { id: 'kompetisi', label: 'Kompetisi & Lencana', desc: 'Peringkat siswa & badge digital', icon: Award },
                       { id: 'forum', label: 'Forum Musyawarah Kelas', desc: 'Diskusi kasus & etika berbangsa', icon: MessageSquare },
                       { id: 'agenda', label: 'Agenda & Hari Nasional', desc: 'Jadwal belajar & kalender HUT', icon: Calendar },
-                      { id: 'dashboardGuru', label: 'Dashboard Guru Pengampu', desc: 'Kelola soal & ekspor nilai', icon: UserCheck },
+                      { id: 'dashboardGuru', label: 'Dashboard Guru Pengampu', desc: 'Kelola soal, siswa & nilai', icon: UserCheck },
                     ].map((btn) => (
                       <button
                         key={btn.id}
@@ -1654,6 +1659,11 @@ export default function App() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* ================= TOOL GURU (10 ALAT BANTU MENGAJAR) ================= */}
+        {activeMenu === 'toolGuru' && (
+          <TeacherToolkitView students={students} />
         )}
 
         {/* ================= 13. DASHBOARD GURU ================= */}
