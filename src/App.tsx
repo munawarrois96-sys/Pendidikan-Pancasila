@@ -29,6 +29,8 @@ import { ThreeDimensionalViewer } from './components/ThreeDimensionalViewer';
 import { NationalGalleryView } from './components/NationalGalleryView';
 import { TkaSimulationView } from './components/TkaSimulationView';
 import { TeacherToolkitView } from './components/TeacherToolkitView';
+import { CpnsSimulationView } from './components/CpnsSimulationView';
+import { PppkSimulationView } from './components/PppkSimulationView';
 
 // Icons
 import {
@@ -165,6 +167,8 @@ export default function App() {
   // 20 Main Navigation Items with categories for clear visitor navigation
   const navItems = [
     { id: 'beranda', label: 'Beranda', icon: Home, category: 'Utama', desc: 'Sambutan guru, profil sekolah, dan gambaran umum' },
+    { id: 'simulasiCpns', label: 'Simulasi CPNS (SKD 110 Soal)', icon: Award, category: 'Asesmen', desc: 'Simulasi CAT BKN: TKP (45), TIU (35), TWK (30), durasi 100 menit, skor maks 550' },
+    { id: 'simulasiPppk', label: 'Simulasi PPPK (145 Soal)', icon: UserCheck, category: 'Asesmen', desc: 'Seleksi Kompetensi Teknis (90), Manajerial (25), Sosio-Kultural (20), Wawancara (10)' },
     { id: 'simulasiTka', label: 'Simulasi TKA Pancasila (30 Soal)', icon: GraduationCap, category: 'Asesmen', desc: 'Simulasi TKA SMA (PPKn/PKN) 30 Soal HOTS Kelas 12 (4 Elemen)' },
     { id: 'materi', label: 'Materi Belajar', icon: BookOpen, category: 'Pembelajaran', desc: 'Modul Kurikulum Merdeka Kelas X, XI, XII' },
     { id: 'video', label: 'Video Animasi', icon: Play, category: 'Pembelajaran', desc: 'Video pembelajaran interaktif & studi kasus' },
@@ -603,6 +607,8 @@ export default function App() {
                   <div className="flex flex-wrap items-center gap-2 pt-1 text-xs font-bold text-sky-100">
                     <span className="text-[11px] text-sky-200 opacity-90 hidden sm:inline">Pintas Cepat:</span>
                     {[
+                      { id: 'simulasiCpns', label: 'Simulasi CPNS SKD (110 Soal) 🇮🇩', icon: Award },
+                      { id: 'simulasiPppk', label: 'Simulasi PPPK (145 Soal) 🎓', icon: UserCheck },
                       { id: 'simulasiTka', label: 'Simulasi TKA (30 Soal) ⭐', icon: GraduationCap },
                       { id: 'toolGuru', label: 'TOOL Guru (10 Alat) 🛠️', icon: Wrench },
                       { id: 'galeriPresiden', label: 'Presiden RI (1-8)', icon: Landmark },
@@ -680,6 +686,99 @@ export default function App() {
                   <GraduationCap size={20} />
                   <span>Mulai Simulasi TKA (30 Soal)</span>
                 </button>
+              </div>
+            </div>
+
+            {/* SPESIAL SIMULASI ASN: CPNS (110 SOAL) & PPPK (145 SOAL) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Card 1: Simulasi CPNS SKD */}
+              <div className="bg-gradient-to-br from-red-900 via-rose-900 to-red-950 text-white rounded-3xl p-6 sm:p-7 shadow-xl border-2 border-amber-400/80 relative overflow-hidden flex flex-col justify-between space-y-4">
+                <div className="space-y-2 z-10">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="bg-amber-400 text-slate-950 font-black text-xs px-3 py-0.5 rounded-full shadow-sm flex items-center gap-1">
+                      <Award size={13} />
+                      <span>BARU: CAT BKN CPNS SKD</span>
+                    </span>
+                    <span className="bg-white/20 text-white font-semibold text-xs px-2.5 py-0.5 rounded-full">
+                      110 Soal • 100 Menit
+                    </span>
+                  </div>
+                  <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                    Simulasi SKD CPNS (110 Soal)
+                  </h3>
+                  <p className="text-xs text-red-100 leading-relaxed font-medium">
+                    Sistem CAT BKN resmi: <b>TKP</b> (45 soal, bobot 1–5), <b>TIU</b> (35 soal, benar 5), dan <b>TWK</b> (30 soal, benar 5). Total nilai maksimal 550 dengan verifikasi passing grade otomatis.
+                  </p>
+                  <div className="flex items-center gap-3 text-xs text-amber-300 font-bold pt-1 flex-wrap">
+                    <span>⏱️ 100 Menit (130m Netra)</span>
+                    <span>•</span>
+                    <span>📊 Skor Maks: 550</span>
+                    <span>•</span>
+                    <span>💡 Pembahasan Lengkap</span>
+                  </div>
+                </div>
+
+                <div className="z-10 pt-1">
+                  <button
+                    onClick={() => {
+                      setActiveMenu('simulasiCpns');
+                      sound.playClick();
+                    }}
+                    className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs sm:text-sm rounded-2xl shadow-xl transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2 border border-amber-300"
+                  >
+                    <Award size={18} />
+                    <span>Mulai Simulasi CPNS (110 Soal)</span>
+                  </button>
+                </div>
+
+                <div className="absolute -right-4 -bottom-4 text-8xl opacity-10 pointer-events-none select-none">
+                  🇮🇩
+                </div>
+              </div>
+
+              {/* Card 2: Simulasi PPPK */}
+              <div className="bg-gradient-to-br from-blue-900 via-indigo-900 to-sky-950 text-white rounded-3xl p-6 sm:p-7 shadow-xl border-2 border-sky-400/80 relative overflow-hidden flex flex-col justify-between space-y-4">
+                <div className="space-y-2 z-10">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="bg-sky-400 text-slate-950 font-black text-xs px-3 py-0.5 rounded-full shadow-sm flex items-center gap-1">
+                      <UserCheck size={13} />
+                      <span>BARU: SELEKSI KOMPETENSI PPPK</span>
+                    </span>
+                    <span className="bg-white/20 text-white font-semibold text-xs px-2.5 py-0.5 rounded-full">
+                      145 Soal • 130 Menit
+                    </span>
+                  </div>
+                  <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                    Simulasi Seleksi PPPK (145 Soal)
+                  </h3>
+                  <p className="text-xs text-sky-100 leading-relaxed font-medium">
+                    Standar KemenPAN-RB: <b>Kompetensi Teknis</b> (90 soal), <b>Manajerial</b> (25 soal), <b>Sosial Kultural</b> (20 soal), dan <b>Wawancara</b> (10 soal). Total nilai maksimal 670.
+                  </p>
+                  <div className="flex items-center gap-3 text-xs text-sky-300 font-bold pt-1 flex-wrap">
+                    <span>⏱️ 130 Menit (120m + 10m)</span>
+                    <span>•</span>
+                    <span>📊 Skor Maks: 670</span>
+                    <span>•</span>
+                    <span>💡 Nilai Bertingkat 1-4</span>
+                  </div>
+                </div>
+
+                <div className="z-10 pt-1">
+                  <button
+                    onClick={() => {
+                      setActiveMenu('simulasiPppk');
+                      sound.playClick();
+                    }}
+                    className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-sky-400 to-blue-400 hover:from-sky-300 hover:to-blue-300 text-slate-950 font-black text-xs sm:text-sm rounded-2xl shadow-xl transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2 border border-sky-300"
+                  >
+                    <UserCheck size={18} />
+                    <span>Mulai Simulasi PPPK (145 Soal)</span>
+                  </button>
+                </div>
+
+                <div className="absolute -right-4 -bottom-4 text-8xl opacity-10 pointer-events-none select-none">
+                  🎓
+                </div>
               </div>
             </div>
 
@@ -801,6 +900,8 @@ export default function App() {
                   </div>
                   <div className="space-y-1.5">
                     {[
+                      { id: 'simulasiCpns', label: 'Simulasi CPNS SKD (110 Soal) 🇮🇩', desc: 'TKP (45), TIU (35), TWK (30) BKN CAT', icon: Award },
+                      { id: 'simulasiPppk', label: 'Simulasi PPPK (145 Soal) 🎓', desc: 'Teknis (90), Manajerial, Sosio, Wawancara', icon: UserCheck },
                       { id: 'simulasiTka', label: 'Simulasi TKA Pancasila (30 Soal) ⭐', desc: 'Tes Kemampuan Akademik HOTS Kelas 12', icon: GraduationCap },
                       { id: 'game', label: '5 Game Edukasi Pancasila', desc: 'Platformer, Detektif, Puzzle', icon: Gamepad2 },
                       { id: 'simulasi', label: 'Simulasi Demokrasi', desc: 'Sidang PPKI & Pemilu OSIS', icon: Vote },
@@ -1518,6 +1619,32 @@ export default function App() {
         {/* ================= SIMULASI TKA PENDIDIKAN PANCASILA SMA (30 SOAL) ================= */}
         {activeMenu === 'simulasiTka' && (
           <TkaSimulationView
+            onAddPoints={(pts) => {
+              setCurrentUser((p) => ({
+                ...p,
+                points: p.points + pts,
+              }));
+            }}
+            onNavigateHome={() => setActiveMenu('beranda')}
+          />
+        )}
+
+        {/* ================= SIMULASI CPNS (SKD 110 SOAL) ================= */}
+        {activeMenu === 'simulasiCpns' && (
+          <CpnsSimulationView
+            onAddPoints={(pts) => {
+              setCurrentUser((p) => ({
+                ...p,
+                points: p.points + pts,
+              }));
+            }}
+            onNavigateHome={() => setActiveMenu('beranda')}
+          />
+        )}
+
+        {/* ================= SIMULASI PPPK (145 SOAL) ================= */}
+        {activeMenu === 'simulasiPppk' && (
+          <PppkSimulationView
             onAddPoints={(pts) => {
               setCurrentUser((p) => ({
                 ...p,
