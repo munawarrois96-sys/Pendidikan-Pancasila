@@ -187,7 +187,6 @@ export default function App() {
     { id: 'agenda', label: 'Agenda & Tugas', icon: Calendar, category: 'Sekolah', desc: 'Kalender asesmen & hari besar nasional' },
     { id: 'toolGuru', label: 'TOOL Guru (10 Alat)', icon: Wrench, category: 'Manajemen', desc: '10 Alat bantu mengajar: timer, acak nama, kelompok, scan, LJK, jadwal' },
     { id: 'dashboardGuru', label: 'Dashboard Guru', icon: UserCheck, category: 'Manajemen', desc: 'Panel guru, bank soal & rekap ekspor nilai' },
-    { id: 'profil', label: 'Profil Siswa', icon: User, category: 'Pengguna', desc: 'Portofolio Profil Pelajar Pancasila & sertifikat' },
     { id: 'tentang', label: 'Tentang Web', icon: Info, category: 'Informasi', desc: 'Profil SMA Negeri 1 Mande & tim pengampu' },
   ];
 
@@ -320,11 +319,11 @@ export default function App() {
             {/* Current User Avatar & Nama Siswa */}
             <div
               onClick={() => {
-                setActiveMenu('profil');
+                setActiveMenu('kompetisi');
                 sound.playClick();
               }}
               className="flex items-center gap-1.5 sm:gap-2 cursor-pointer bg-sky-700/90 hover:bg-sky-700 border border-sky-400/60 px-2.5 py-1.5 rounded-xl transition-all shadow-sm shrink-0"
-              title="Profil Siswa & Peran"
+              title="Kompetisi, Lencana & Sertifikat Siswa"
             >
               <span className="text-base sm:text-lg">{currentUser.avatar}</span>
               <div className="text-left text-xs">
@@ -1612,7 +1611,7 @@ export default function App() {
         )}
 
         {/* ================= 7. KOMPETISI, LENCANA & SERTIFIKAT ================= */}
-        {(activeMenu === 'kompetisi' || activeMenu === 'profil') && (
+        {activeMenu === 'kompetisi' && (
           <ProfileAndCompetitionsView user={currentUser} students={students} />
         )}
 
@@ -1800,7 +1799,7 @@ export default function App() {
             onUpdateStudents={handleUpdateStudents}
             onNavigateToCertificate={(selectedStd) => {
               setCurrentUser(selectedStd);
-              setActiveMenu('profil');
+              setActiveMenu('kompetisi');
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
           />

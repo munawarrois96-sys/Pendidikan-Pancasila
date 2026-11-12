@@ -36,8 +36,8 @@ export const InteractiveVideoPlayer: React.FC<InteractiveVideoPlayerProps> = ({
   onClose,
   compact = false,
 }) => {
-  // Player state
-  const [activeMode, setActiveMode] = useState<'animation' | 'youtube'>('animation');
+  // Player state: animation, youtube, or dual (side-by-side companion)
+  const [activeMode, setActiveMode] = useState<'animation' | 'youtube' | 'dual'>('animation');
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [duration, setDuration] = useState<number>(material.video.durationSec || 180);
@@ -50,6 +50,7 @@ export const InteractiveVideoPlayer: React.FC<InteractiveVideoPlayerProps> = ({
   const [voiceNarrationEnabled, setVoiceNarrationEnabled] = useState<boolean>(false);
   const [activeSceneIndex, setActiveSceneIndex] = useState<number>(0);
   const [isYouTubeStarted, setIsYouTubeStarted] = useState<boolean>(false);
+  const [selectedOfficialSource, setSelectedOfficialSource] = useState<'kemdikbud' | 'bpip' | 'tvedukasi'>('kemdikbud');
 
   const containerRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<number | null>(null);
@@ -242,8 +243,8 @@ export const InteractiveVideoPlayer: React.FC<InteractiveVideoPlayerProps> = ({
           </div>
         </div>
 
-        {/* Tab Switcher: Animasi SMANDE vs YouTube */}
-        <div className="flex items-center gap-2 bg-slate-900/90 p-1 rounded-xl border border-sky-500/30 text-xs">
+        {/* Tab Switcher: Animasi SMANDE vs YouTube vs Berdampingan */}
+        <div className="flex flex-wrap items-center gap-1.5 bg-slate-900/90 p-1 rounded-xl border border-sky-500/30 text-xs">
           <button
             onClick={() => {
               setActiveMode('animation');
@@ -256,7 +257,7 @@ export const InteractiveVideoPlayer: React.FC<InteractiveVideoPlayerProps> = ({
             }`}
           >
             <Sparkles size={13} />
-            <span>Animasi Interaktif SMANDE</span>
+            <span>Animasi SMANDE</span>
           </button>
           <button
             onClick={() => {
@@ -271,7 +272,23 @@ export const InteractiveVideoPlayer: React.FC<InteractiveVideoPlayerProps> = ({
             }`}
           >
             <Play size={13} />
-            <span>YouTube Resmi (Suara & Gambar HD)</span>
+            <span>YouTube Resmi HD</span>
+          </button>
+          <button
+            onClick={() => {
+              setActiveMode('dual');
+              setIsPlaying(true);
+              setIsYouTubeStarted(true);
+            }}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition-all ${
+              activeMode === 'dual'
+                ? 'bg-amber-500 text-slate-950 shadow-md'
+                : 'text-amber-200 hover:text-white'
+            }`}
+            title="Tonton Animasi SMANDE dan Video Resmi YouTube secara bersamaan berdampingan"
+          >
+            <Film size={13} />
+            <span>⚖️ Berdampingan</span>
           </button>
 
           {onClose && (
@@ -286,8 +303,90 @@ export const InteractiveVideoPlayer: React.FC<InteractiveVideoPlayerProps> = ({
       </div>
 
       {/* Main Video Viewport */}
-      <div className="relative aspect-video w-full bg-slate-950 overflow-hidden flex items-center justify-center select-none">
-        {activeMode === 'animation' ? (
+      <div className={`relative w-full bg-slate-950 overflow-hidden flex items-center justify-center select-none ${
+        activeMode === 'dual' ? 'min-h-[460px]' : 'aspect-video'
+      }`}>
+        {activeMode === 'dual' ? (
+          /* ================= MODE 3: MODE BERDAMPINGAN (DUAL COMPANION) ================= */
+          <div className="grid grid-cols-1 lg:grid-cols-2 w-full h-full min-h-[460px] divide-y lg:divide-y-0 lg:divide-x divide-sky-700/50">
+            {/* Sisi Kiri: Animasi Interaktif SMANDE */}
+            <div className="relative aspect-video lg:aspect-auto w-full flex flex-col justify-between overflow-hidden bg-slate-900 p-4">
+              <img
+                src={activeImage}
+                alt={currentScene.title}
+                className="absolute inset-0 w-full h-full object-cover opacity-30"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/70 to-slate-950/40" />
+
+              <div className="relative z-10 flex items-center justify-between">
+                <span className="text-[10px] font-black uppercase bg-sky-500 text-sky-950 px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow">
+                  <Sparkles size={11} /> Animasi SMANDE
+                </span>
+                <span className="text-xs text-amber-300 font-extrabold bg-black/60 px-2 py-0.5 rounded-lg border border-amber-400/40">
+                  {currentScene.badge}
+                </span>
+              </div>
+
+              <div className="relative z-10 my-auto p-4 bg-slate-950/85 backdrop-blur-md rounded-2xl border border-sky-400/30 shadow-xl space-y-2">
+                <div className="flex items-center justify-between text-xs font-black text-amber-300">
+                  <span>{currentScene.speaker}</span>
+                  <span className="font-mono text-sky-300">{formatTime(currentTime)} / {formatTime(duration)}</span>
+                </div>
+                <p className="text-xs sm:text-sm text-white font-medium leading-relaxed">
+                  "{currentScene.narration}"
+                </p>
+                {currentScene.highlightWords && (
+                  <div className="flex flex-wrap gap-1 pt-1">
+                    {currentScene.highlightWords.map((w, idx) => (
+                      <span key={idx} className="text-[9px] font-bold px-1.5 py-0.5 bg-sky-500/20 text-sky-200 rounded border border-sky-400/30">
+                        #{w}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="relative z-10 flex items-center justify-between text-[11px] text-slate-300">
+                <span>Adegan {activeSceneIndex + 1} dari {scenes.length}</span>
+                <button
+                  onClick={() => setIsPlaying(!isPlaying)}
+                  className="px-2.5 py-1 bg-sky-600 hover:bg-sky-500 text-white rounded-lg font-bold flex items-center gap-1"
+                >
+                  {isPlaying ? <Pause size={12} /> : <Play size={12} />}
+                  <span>{isPlaying ? 'Jeda' : 'Lanjut'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Sisi Kanan: Video Resmi YouTube Kemendikbud & BPIP */}
+            <div className="relative aspect-video lg:aspect-auto w-full bg-black flex flex-col">
+              <div className="bg-red-950/90 border-b border-red-800/40 px-3 py-1.5 flex items-center justify-between text-xs font-bold text-white z-10">
+                <span className="flex items-center gap-1.5 text-red-200">
+                  <Play size={12} className="fill-red-400 text-red-400" />
+                  <span>Siaran Resmi YouTube (Kemendikbudristek & BPIP)</span>
+                </span>
+                <a
+                  href={ytWatchUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[11px] text-sky-300 hover:text-white flex items-center gap-1"
+                >
+                  <span>Buka YouTube</span>
+                  <ExternalLink size={10} />
+                </a>
+              </div>
+              <div className="flex-1 w-full relative min-h-[240px]">
+                <iframe
+                  src={ytEmbedUrl}
+                  title={material.video.title}
+                  className="w-full h-full border-0 absolute inset-0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              </div>
+            </div>
+          </div>
+        ) : activeMode === 'animation' ? (
           /* ================= MODE 1: ANIMASI INTERAKTIF DENGAN GAMBAR JELAS & BERPUTAR ================= */
           <div className="relative w-full h-full flex flex-col justify-between overflow-hidden">
             {/* Background Educational Picture with Dynamic Zoom / Ken Burns Animation */}
@@ -704,6 +803,129 @@ export const InteractiveVideoPlayer: React.FC<InteractiveVideoPlayerProps> = ({
             <span>{scene.title}</span>
           </button>
         ))}
+      </div>
+
+      {/* ================= OFFICIAL YOUTUBE VIDEO COMPANION PANEL (PENYERTA RESMI) ================= */}
+      <div className="bg-gradient-to-br from-slate-900 via-sky-950 to-slate-900 border-t border-sky-500/30 p-4 md:p-6 text-white space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-red-600 flex items-center justify-center text-white shadow-lg shrink-0">
+              <Play size={18} className="fill-white ml-0.5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase tracking-wider bg-red-600/90 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <CheckCircle2 size={10} /> Saluran Resmi Kemendikbudristek & BPIP RI
+                </span>
+                <span className="text-[11px] font-semibold text-emerald-300 hidden sm:inline-block">
+                  ● Sumber Pembelajaran Terverifikasi
+                </span>
+              </div>
+              <h4 className="text-sm md:text-base font-black text-white mt-0.5">
+                Penyerta Video Pembelajaran Resmi YouTube (Kemendikbudristek & BPIP RI)
+              </h4>
+            </div>
+          </div>
+
+          {/* Quick Action Buttons */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                setActiveMode('youtube');
+                setIsYouTubeStarted(true);
+                if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+              }}
+              className="px-3.5 py-1.5 bg-red-600 hover:bg-red-500 text-white font-extrabold text-xs rounded-xl shadow-lg flex items-center gap-1.5 transition-all transform active:scale-95"
+            >
+              <Play size={14} className="fill-white" />
+              <span>Tonton YouTube HD</span>
+            </button>
+            <button
+              onClick={() => {
+                setActiveMode('dual');
+                setIsYouTubeStarted(true);
+              }}
+              className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs rounded-xl shadow-lg flex items-center gap-1.5 transition-all transform active:scale-95"
+            >
+              <Film size={14} />
+              <span>Berdampingan</span>
+            </button>
+            <a
+              href={ytWatchUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-sky-200 font-bold text-xs rounded-xl border border-sky-400/30 flex items-center gap-1.5 transition-all"
+            >
+              <ExternalLink size={14} />
+              <span>Buka YouTube</span>
+            </a>
+          </div>
+        </div>
+
+        {/* Companion Video Details Card */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-950/70 border border-sky-500/20 rounded-2xl p-4">
+          {/* Thumbnail & Quick Play */}
+          <div
+            onClick={() => {
+              setActiveMode('youtube');
+              setIsYouTubeStarted(true);
+              if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+            }}
+            className="relative aspect-video rounded-xl overflow-hidden cursor-pointer group border border-sky-400/30 shadow-md"
+          >
+            <img
+              src={material.video.thumbnail}
+              alt={material.video.title}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+            <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 flex items-center justify-center transition-colors">
+              <div className="w-10 h-10 rounded-full bg-red-600 text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                <Play size={18} className="fill-white ml-0.5" />
+              </div>
+            </div>
+            <span className="absolute bottom-1.5 right-1.5 bg-black/80 text-[10px] font-mono text-white px-1.5 py-0.5 rounded">
+              {material.video.duration || '08:24'}
+            </span>
+          </div>
+
+          {/* Video Summary & Alignment */}
+          <div className="md:col-span-2 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <span className="text-[10px] font-bold text-amber-300 bg-amber-950/80 border border-amber-500/40 px-2 py-0.5 rounded-md">
+                  Materi: Kelas {material.grade} • Bab {material.chapterNumber}
+                </span>
+                <span className="text-[11px] text-slate-300 font-medium">
+                  Sumber: Kementerian Pendidikan, Kebudayaan, Riset, dan Teknologi RI
+                </span>
+              </div>
+              <h5 className="text-sm font-extrabold text-white leading-snug mb-1">
+                {material.video.title}
+              </h5>
+              <p className="text-xs text-slate-300 leading-relaxed line-clamp-2">
+                {material.video.summary}
+              </p>
+            </div>
+
+            <div className="pt-2 mt-2 border-t border-white/10 flex flex-wrap items-center justify-between text-xs text-sky-200 gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[11px] font-bold text-slate-400">Penyerta Saluran Resmi:</span>
+                <span className="px-2 py-0.5 bg-sky-900/60 rounded text-[10px] font-bold border border-sky-600/40 text-sky-200">
+                  TV Edukasi
+                </span>
+                <span className="px-2 py-0.5 bg-red-950/60 text-red-200 rounded text-[10px] font-bold border border-red-600/40">
+                  BPIP RI
+                </span>
+                <span className="px-2 py-0.5 bg-emerald-950/60 text-emerald-200 rounded text-[10px] font-bold border border-emerald-600/40">
+                  Rumah Belajar
+                </span>
+              </div>
+              <span className="text-[10px] text-slate-400">
+                Disinkronisasi oleh Guru Pengampu: Munawar Rois, S.Pd.
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
