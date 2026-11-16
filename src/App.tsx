@@ -30,7 +30,6 @@ import { TkaSimulationView } from './components/TkaSimulationView';
 import { TeacherToolkitView } from './components/TeacherToolkitView';
 import { CpnsSimulationView } from './components/CpnsSimulationView';
 import { PppkSimulationView } from './components/PppkSimulationView';
-import { NativeBannerAd } from './components/NativeBannerAd';
 
 // Icons
 import {
@@ -1946,7 +1945,6 @@ export default function App() {
           </div>
         )}
         </NavigationWindowFrame>
-        <NativeBannerAd />
       </main>
 
       {/* Footer in Deep Sky Blue */}
