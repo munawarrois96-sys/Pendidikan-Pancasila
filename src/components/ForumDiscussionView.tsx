@@ -6,7 +6,7 @@ import { MessageSquare, ThumbsUp, Send, PlusCircle, ShieldCheck, User } from 'lu
 
 export const ForumDiscussionView: React.FC<{ currentUserRole?: string; currentUserName?: string }> = ({
   currentUserRole = 'siswa',
-  currentUserName = 'Rafi Ahmad Pratama',
+  currentUserName = 'Siti Nurhaliza',
 }) => {
   const [posts, setPosts] = useState<ForumPost[]>(initialForumPosts);
   const [showNewTopicModal, setShowNewTopicModal] = useState(false);

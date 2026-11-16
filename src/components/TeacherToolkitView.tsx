@@ -107,7 +107,7 @@ export const TeacherToolkitView: React.FC<TeacherToolkitProps> = ({ students: pr
   // ================= 2. ACAK NAMA (RANDOM STUDENT PICKER) STATE =================
   const [namePoolType, setNamePoolType] = useState<'registered' | 'custom'>('registered');
   const [customNamesText, setCustomNamesText] = useState(
-    'Rafi Ahmad\nSiti Nurhaliza\nBudi Santoso\nAnisa Rahmawati\nDimas Arya\nFarhan Fauzi\nNabila Putri\nReza Pratama'
+    'Siti Nurhaliza\nBudi Santoso\nAnisa Rahmawati\nDimas Arya\nFarhan Fauzi\nNabila Putri\nReza Pratama'
   );
   const [removePickedName, setRemovePickedName] = useState(true);
   const [isPickingName, setIsPickingName] = useState(false);
@@ -404,7 +404,7 @@ export const TeacherToolkitView: React.FC<TeacherToolkitProps> = ({ students: pr
   // ================= 9. LJK SCANNER STATE =================
   const defaultAnswerKey = ['A', 'B', 'C', 'D', 'A', 'B', 'C', 'D', 'A', 'B', 'C', 'D', 'A', 'B', 'C', 'D', 'A', 'B', 'C', 'D'];
   const [answerKey, setAnswerKey] = useState<string[]>(defaultAnswerKey);
-  const [scannedStudentName, setScannedStudentName] = useState('Rafi Ahmad Pratama');
+  const [scannedStudentName, setScannedStudentName] = useState('Siti Nurhaliza');
   const [scannedAnswers, setScannedAnswers] = useState<string[]>(['A', 'B', 'C', 'C', 'A', 'B', 'C', 'D', 'A', 'B', 'C', 'D', 'A', 'A', 'C', 'D', 'A', 'B', 'C', 'D']);
   const [isLjkGraded, setIsLjkGraded] = useState(false);
   const [gradedHistory, setGradedHistory] = useState<

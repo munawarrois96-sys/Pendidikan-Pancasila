@@ -20,7 +20,6 @@ import { ELibraryView } from './components/ELibraryView';
 import { ForumDiscussionView } from './components/ForumDiscussionView';
 import { ProfileAndCompetitionsView } from './components/ProfileAndCompetitionsView';
 import { NusantaraInteractiveMap } from './components/NusantaraInteractiveMap';
-import { AITutorModal } from './components/AITutorModal';
 import { InteractiveVideoPlayer } from './components/InteractiveVideoPlayer';
 import { NavigationWindowFrame } from './components/NavigationWindowFrame';
 import { ClockWidget } from './components/ClockWidget';
@@ -48,9 +47,7 @@ import {
   MessageSquare,
   Calendar,
   UserCheck,
-  User,
   Info,
-  Bot,
   Volume2,
   VolumeX,
   Menu,
@@ -61,7 +58,6 @@ import {
   Clock,
   ChevronRight,
   Compass,
-  Megaphone,
   Heart,
   Search,
   Landmark,
@@ -118,8 +114,6 @@ export default function App() {
     return list[0] || defaultStudents[0];
   });
   const [isSoundMuted, setIsSoundMuted] = useState(false);
-  const [isAiTutorOpen, setIsAiTutorOpen] = useState(false);
-  const [fontSize, setFontSize] = useState<'standar' | 'besar' | 'ekstra'>('standar');
 
   const handleUpdateStudents = (newStudents: UserProfile[]) => {
     setStudents(newStudents);
@@ -198,10 +192,132 @@ export default function App() {
     return matchSearch && matchCategory;
   });
 
+  // Helper for hierarchical Breadcrumbs
+  const currentNavItem = navItems.find((n) => n.id === activeMenu) || navItems[0];
+  const gameLabels: Record<typeof activeGameTab, string> = {
+    platformer: '1. Petualangan 2D',
+    speed: '2. Kuis Kilat',
+    detective: '3. Detektif Moral',
+    pemilu: '4. Simulasi Pemilu',
+    puzzle: '5. Puzzle Hierarki',
+  };
+
+  type BreadcrumbEntry = {
+    label: string;
+    onClick?: () => void;
+    isCurrent?: boolean;
+  };
+
+  const getBreadcrumbs = (): BreadcrumbEntry[] => {
+    const crumbs: BreadcrumbEntry[] = [
+      {
+        label: 'Beranda',
+        onClick: activeMenu === 'beranda' ? undefined : () => handleNavigate('beranda'),
+        isCurrent: activeMenu === 'beranda',
+      },
+    ];
+
+    if (activeMenu === 'beranda') {
+      crumbs.push({
+        label: 'Portal Utama SMANDE',
+        isCurrent: true,
+      });
+      return crumbs;
+    }
+
+    // Category level (opens drawer filtered to that category)
+    crumbs.push({
+      label: currentNavItem.category,
+      onClick: () => {
+        sound.playClick();
+        setSelectedDrawerCat(currentNavItem.category);
+        setDrawerSearch('');
+        setIsNavDrawerOpen(true);
+      },
+    });
+
+    // Determine if there is a deeper sub-level
+    if (activeMenu === 'materi') {
+      crumbs.push({
+        label: currentNavItem.label,
+        onClick: selectedMaterial
+          ? () => {
+              sound.playClick();
+              setSelectedMaterial(null);
+            }
+          : undefined,
+      });
+      crumbs.push({
+        label: `Kelas ${selectedGrade}`,
+        onClick: selectedMaterial
+          ? () => {
+              sound.playClick();
+              setSelectedMaterial(null);
+            }
+          : undefined,
+        isCurrent: !selectedMaterial,
+      });
+      if (selectedMaterial) {
+        crumbs.push({
+          label: `Bab ${selectedMaterial.chapterNumber}: ${selectedMaterial.title}`,
+          isCurrent: true,
+        });
+      }
+      return crumbs;
+    }
+
+    if (activeMenu === 'video') {
+      crumbs.push({
+        label: currentNavItem.label,
+      });
+      crumbs.push({
+        label: videoFilterGrade === 'ALL' ? 'Semua Kelas' : `Kelas ${videoFilterGrade}`,
+      });
+      crumbs.push({
+        label: activeVideoMaterial.video.title,
+        isCurrent: true,
+      });
+      return crumbs;
+    }
+
+    if (activeMenu === 'game') {
+      crumbs.push({
+        label: currentNavItem.label,
+      });
+      crumbs.push({
+        label: gameLabels[activeGameTab],
+        isCurrent: true,
+      });
+      return crumbs;
+    }
+
+    if (activeMenu === 'kuis' && activeQuizTitle) {
+      crumbs.push({
+        label: currentNavItem.label,
+        onClick: () => {
+          sound.playClick();
+          setActiveQuizQuestions(null);
+          setActiveQuizTitle('');
+        },
+      });
+      crumbs.push({
+        label: activeQuizTitle,
+        isCurrent: true,
+      });
+      return crumbs;
+    }
+
+    crumbs.push({
+      label: currentNavItem.label,
+      isCurrent: true,
+    });
+    return crumbs;
+  };
+
+  const breadcrumbs = getBreadcrumbs();
+
   return (
-    <div className={`min-h-screen bg-gradient-to-b from-sky-100/70 via-sky-50 to-white text-slate-800 flex flex-col font-sans transition-all duration-200 ${
-      fontSize === 'ekstra' ? 'text-lg' : fontSize === 'besar' ? 'text-base' : ''
-    }`}>
+    <div className="min-h-screen bg-gradient-to-b from-sky-100/70 via-sky-50 to-white text-slate-800 flex flex-col font-sans transition-all duration-200">
       {/* Top Banner & Header */}
       <header className="sticky top-0 z-40 bg-sky-600 text-white shadow-md border-b border-sky-500">
         {/* Top Flag Strip */}
@@ -242,28 +358,12 @@ export default function App() {
             </div>
           </div>
 
-          {/* User Quick Info & Action Controls - All kept strictly inside sky blue header */}
-          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-end">
+          {/* Right Controls: Clock, Role, Sound, and Menu Navigasi strictly at Top-Right Corner */}
+          <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap justify-end ml-auto">
             {/* Real-time Clock, Day & Date Widget in Header */}
             <ClockWidget variant="header" />
 
-            {/* Tombol Garis Tiga (Menu Navigasi) - Membuka Semua Menu ke Bawah */}
-            <button
-              onClick={() => {
-                setIsNavDrawerOpen(true);
-                sound.playClick();
-              }}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-white text-sky-800 hover:bg-sky-50 font-extrabold text-xs sm:text-sm rounded-xl shadow-md transition-all border border-sky-200 active:scale-95 group shrink-0"
-              title={`Buka ${navItems.length} Menu Pembelajaran (Navigasi Vertikal)`}
-            >
-              <Menu size={17} className="text-sky-700 stroke-[2.5] group-hover:rotate-6 transition-transform" />
-              <span className="font-extrabold">Menu Navigasi</span>
-              <span className="text-[10px] bg-sky-100 text-sky-800 font-black px-1.5 py-0.5 rounded-md hidden md:inline">
-                {navItems.length} Menu ▾
-              </span>
-            </button>
-
-            {/* Role Switcher Pill */}
+            {/* Role Switcher */}
             <div className="hidden xl:flex items-center gap-1 bg-sky-700/80 border border-sky-400/40 p-1 rounded-xl text-xs shrink-0">
               {(['siswa', 'guru', 'admin'] as const).map((r) => (
                 <button
@@ -289,59 +389,34 @@ export default function App() {
               {isSoundMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
             </button>
 
-            {/* Font Size Accessibility Controller */}
+            {/* Tombol Menu Navigasi di Pojok Kanan Atas */}
             <button
               onClick={() => {
+                setIsNavDrawerOpen(true);
                 sound.playClick();
-                setFontSize((curr) => (curr === 'standar' ? 'besar' : curr === 'besar' ? 'ekstra' : 'standar'));
               }}
-              title="Ubah Ukuran Huruf Website (Standar, Besar, Ekstra)"
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-sky-700 hover:bg-sky-500 text-xs font-bold text-amber-300 border border-sky-400/50 transition-all active:scale-95 shrink-0"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-sky-800 hover:bg-sky-50 font-extrabold text-xs sm:text-sm rounded-xl shadow-md transition-all border border-sky-200 active:scale-95 group shrink-0"
+              title={`Buka ${navItems.length} Menu Pembelajaran`}
             >
-              <span className="font-extrabold text-sm leading-none">A+</span>
-              <span className="text-[10px] uppercase font-black text-sky-950 bg-amber-400 px-1.5 py-0.5 rounded shadow-xs hidden sm:inline">
-                {fontSize === 'ekstra' ? 'Ekstra' : fontSize === 'besar' ? 'Besar' : 'Standar'}
+              <Menu size={17} className="text-sky-700 stroke-[2.5] group-hover:rotate-6 transition-transform" />
+              <span className="font-extrabold whitespace-nowrap">Menu Navigasi</span>
+              <span className="text-[10px] bg-sky-100 text-sky-800 font-black px-1.5 py-0.5 rounded-md hidden md:inline">
+                {navItems.length} Menu ▾
               </span>
             </button>
-
-            {/* AI Tutor Floating Trigger */}
-            <button
-              onClick={() => {
-                setIsAiTutorOpen(true);
-                sound.playClick();
-              }}
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-sky-950 font-black text-xs rounded-xl shadow-md transition-all transform hover:scale-105 active:scale-95 border border-amber-300 shrink-0"
-            >
-              <Bot size={16} />
-              <span>Tutor Garuda</span>
-            </button>
-
-            {/* Current User Avatar & Nama Siswa */}
-            <div
-              onClick={() => {
-                setActiveMenu('kompetisi');
-                sound.playClick();
-              }}
-              className="flex items-center gap-1.5 sm:gap-2 cursor-pointer bg-sky-700/90 hover:bg-sky-700 border border-sky-400/60 px-2.5 py-1.5 rounded-xl transition-all shadow-sm shrink-0"
-              title="Kompetisi, Lencana & Sertifikat Siswa"
-            >
-              <span className="text-base sm:text-lg">{currentUser.avatar}</span>
-              <div className="text-left text-xs">
-                <div className="font-bold text-white leading-tight truncate max-w-[85px] sm:max-w-[120px]">
-                  {currentUser.name}
-                </div>
-                <div className="text-[10px] text-amber-300 font-semibold leading-none">
-                  {currentUser.points} Poin
-                </div>
-              </div>
-            </div>
           </div>
         </div>
 
-        {/* Modal / Slide-Over Drawer Navigasi Pengunjung (Garis Tiga) */}
+        {/* Modal / Slide-Over Drawer Navigasi Pengunjung (Opens from Top-Right) */}
         {isNavDrawerOpen && (
-          <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex justify-start animate-fade-in">
-            <div className="bg-white text-slate-800 w-full max-w-md h-full flex flex-col shadow-2xl overflow-hidden border-r border-sky-200">
+          <div
+            onClick={() => setIsNavDrawerOpen(false)}
+            className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex justify-end animate-fade-in"
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white text-slate-800 w-full max-w-md h-full flex flex-col shadow-2xl overflow-hidden border-l border-sky-200"
+            >
               {/* Drawer Header with Logo and Close */}
               <div className="bg-sky-600 text-white p-5 border-b border-sky-500 flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -526,28 +601,51 @@ export default function App() {
         )}
       </header>
 
-      {/* 2. Running Teks Marquee Banner */}
-      <div className="bg-gradient-to-r from-sky-500 via-sky-400 to-sky-500 border-b border-sky-300 text-sky-950 py-2.5 px-4 shadow-sm overflow-hidden flex items-center">
-        <div className="flex items-center gap-1.5 font-black text-xs uppercase tracking-wider shrink-0 mr-4 bg-sky-700 text-white px-3 py-1 rounded-full shadow-sm">
-          <Megaphone size={14} className="text-amber-300" />
-          <span>INFO TERKINI</span>
+      {/* Hierarchical Breadcrumbs Navigation Bar */}
+      <nav
+        aria-label="Breadcrumb"
+        className="bg-white/95 backdrop-blur-sm border-b border-sky-200/80 shadow-2xs"
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between gap-4">
+          <ol className="flex items-center gap-1.5 text-xs sm:text-sm text-slate-500 overflow-x-auto whitespace-nowrap py-0.5">
+            {breadcrumbs.map((crumb, idx) => {
+              const isFirst = idx === 0;
+              const isLast = idx === breadcrumbs.length - 1;
+              return (
+                <li key={`${crumb.label}-${idx}`} className="flex items-center gap-1.5 shrink-0">
+                  {idx > 0 && (
+                    <ChevronRight size={14} className="text-slate-400 shrink-0" aria-hidden="true" />
+                  )}
+                  {crumb.onClick && !isLast ? (
+                    <button
+                      type="button"
+                      onClick={crumb.onClick}
+                      className="inline-flex items-center gap-1.5 font-medium text-slate-600 hover:text-sky-700 hover:underline transition-colors cursor-pointer"
+                    >
+                      {isFirst && <Home size={14} className="text-sky-600 shrink-0" />}
+                      <span>{crumb.label}</span>
+                    </button>
+                  ) : (
+                    <span
+                      aria-current={isLast ? 'page' : undefined}
+                      className={`inline-flex items-center gap-1.5 ${
+                        isLast ? 'font-bold text-sky-800' : 'font-medium text-slate-600'
+                      }`}
+                    >
+                      {isFirst && <Home size={14} className="text-sky-600 shrink-0" />}
+                      <span className="truncate max-w-[240px] sm:max-w-[420px]">{crumb.label}</span>
+                    </span>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+
+          <span className="hidden md:inline-block text-xs text-slate-400 shrink-0">
+            Posisi Hierarki Halaman
+          </span>
         </div>
-        <div className="overflow-hidden whitespace-nowrap w-full">
-          <div className="animate-marquee font-extrabold tracking-wider text-xs md:text-sm text-sky-950">
-            <span className="mx-6 text-sky-950">
-              SELAMAT DATANG DI PEMBELAJARAN INTERAKTIF PENDIDIKAN PANCASILA
-            </span>
-            <span className="mx-2 text-sky-800">★</span>
-            <span className="mx-6 font-bold text-sky-900">SMA NEGERI 1 MANDE (SMANDE)</span>
-            <span className="mx-2 text-sky-800">★</span>
-            <span className="mx-6 text-sky-950">
-              SELAMAT DATANG DI PEMBELAJARAN INTERAKTIF PENDIDIKAN PANCASILA
-            </span>
-            <span className="mx-2 text-sky-800">★</span>
-            <span className="mx-6 font-bold text-sky-900">SMA NEGERI 1 MANDE (SMANDE)</span>
-          </div>
-        </div>
-      </div>
+      </nav>
 
       {/* Main Container Content with Neat Window Frame Navigation */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
@@ -573,7 +671,7 @@ export default function App() {
                 </h1>
 
                 <p className="text-sm md:text-base text-sky-50 leading-relaxed max-w-2xl font-medium">
-                  Platform pembelajaran interaktif Kurikulum Merdeka Fase E & F di <b>SMA Negeri 1 Mande (SMANDE)</b>. Dilengkapi materi berbasis HOTS, 5 game edukasi, kuis penilaian otomatis, simulasi demokrasi, serta asisten AI Tutor Pintar Garuda.
+                  Platform pembelajaran interaktif Kurikulum Merdeka Fase E & F di <b>SMA Negeri 1 Mande (SMANDE)</b>. Dilengkapi materi berbasis HOTS, 5 game edukasi, kuis penilaian otomatis, simulasi demokrasi, serta objek 3D 4 Pilar Kebangsaan.
                 </p>
 
                 {/* Structured Action Buttons in Hero Banner */}
@@ -1861,13 +1959,6 @@ export default function App() {
           </div>
         </div>
       </footer>
-
-      {/* Floating AI Tutor Dialog */}
-      <AITutorModal
-        isOpen={isAiTutorOpen}
-        onClose={() => setIsAiTutorOpen(false)}
-        studentGrade={`Kelas ${selectedGrade}`}
-      />
     </div>
   );
 }

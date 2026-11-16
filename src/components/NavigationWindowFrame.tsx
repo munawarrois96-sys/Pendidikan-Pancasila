@@ -94,9 +94,15 @@ export const NavigationWindowFrame: React.FC<NavigationWindowFrameProps> = ({
 
             {/* Breadcrumb Path */}
             <div className="flex items-center gap-1.5 text-xs text-sky-100 font-medium overflow-x-auto whitespace-nowrap py-0.5">
-              <span className="opacity-80">SMA Negeri 1 Mande</span>
+              <button
+                type="button"
+                onClick={() => onNavigate('beranda')}
+                className="opacity-85 hover:opacity-100 hover:underline transition-opacity cursor-pointer"
+              >
+                Beranda
+              </button>
               <ChevronRight size={12} className="opacity-60 shrink-0" />
-              <span className="bg-sky-900/80 px-2 py-0.5 rounded text-[10px] font-extrabold text-sky-200 border border-sky-500/40 uppercase tracking-wider shrink-0">
+              <span className="text-sky-200 font-semibold shrink-0">
                 {currentItem.category}
               </span>
               <ChevronRight size={12} className="opacity-60 shrink-0" />

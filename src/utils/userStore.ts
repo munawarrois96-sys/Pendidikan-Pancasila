@@ -62,22 +62,6 @@ export const allBadges: Badge[] = [
 
 export const defaultStudents: UserProfile[] = [
   {
-    id: 'std-1',
-    name: 'Rafi Ahmad Pratama',
-    role: 'siswa',
-    nisnOrNip: '0067823411',
-    grade: 'XI',
-    className: 'XI-1',
-    school: 'SMA Negeri 1 Mande (SMANDE)',
-    avatar: '👨‍🎓',
-    points: 420,
-    level: 4,
-    streakDays: 5,
-    badges: ['badge-pejuang', 'badge-demokrasi'],
-    completedMaterials: ['mat-x-1', 'mat-xi-1'],
-    quizScores: { 'quiz-x-ch1': 95, 'quiz-xi-ch1': 88 },
-  },
-  {
     id: 'std-2',
     name: 'Siti Nurhaliza',
     role: 'siswa',
@@ -160,19 +144,6 @@ export const defaultAdmin: UserProfile = {
 // Initial student attempts for teacher analytics
 export const initialAttempts: QuizAttempt[] = [
   {
-    id: 'att-1',
-    quizId: 'quiz-x-ch1',
-    quizTitle: 'Asesmen Bab 1: Menggali Ide Pendiri Bangsa',
-    studentId: 'std-1',
-    studentName: 'Rafi Ahmad Pratama',
-    studentClass: 'XI-1',
-    score: 95,
-    totalQuestions: 5,
-    correctCount: 5,
-    timestamp: '2026-10-28 09:15',
-    answers: {},
-  },
-  {
     id: 'att-2',
     quizId: 'quiz-x-ch1',
     quizTitle: 'Asesmen Bab 1: Menggali Ide Pendiri Bangsa',
@@ -222,7 +193,10 @@ export function getStoredStudents(): UserProfile[] {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+        const cleaned = parsed.filter(
+          (s: UserProfile) => !(s.id === 'std-1' && s.name === 'Rafi Ahmad Pratama')
+        );
+        return cleaned.length > 0 ? cleaned : defaultStudents;
       }
     }
   } catch (err) {
