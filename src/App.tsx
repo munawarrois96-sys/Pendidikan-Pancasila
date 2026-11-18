@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { materialsData } from './data/materialsData';
 import { questionsBank } from './data/quizData';
 import { initialAnnouncements } from './data/forumAndAnnouncements';
@@ -57,6 +57,8 @@ import {
   GraduationCap,
   Clock,
   ChevronRight,
+  ChevronDown,
+  Briefcase,
   Compass,
   Heart,
   Search,
@@ -153,10 +155,52 @@ export default function App() {
     }));
   };
 
-  // Navigation Drawer (Garis Tiga) State
+  // Navigation Drawer, Top Dropdowns & Live Search State
   const [isNavDrawerOpen, setIsNavDrawerOpen] = useState(false);
   const [drawerSearch, setDrawerSearch] = useState('');
   const [selectedDrawerCat, setSelectedDrawerCat] = useState('Semua');
+  const [openNavGroup, setOpenNavGroup] = useState<'belajar' | 'mainUji' | 'guruProfil' | null>(null);
+  const [headerSearch, setHeaderSearch] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const navContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isTyping =
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable);
+
+      if (e.key === '/' && !isTyping) {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        setIsSearchFocused(true);
+      } else if (e.key === 'Escape') {
+        setOpenNavGroup(null);
+        setIsSearchFocused(false);
+        setIsNavDrawerOpen(false);
+        searchInputRef.current?.blur();
+      }
+    };
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (navContainerRef.current && !navContainerRef.current.contains(e.target as Node)) {
+        setOpenNavGroup(null);
+        setIsSearchFocused(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // 20 Main Navigation Items with categories for clear visitor navigation
   const navItems = [
@@ -191,6 +235,60 @@ export default function App() {
     const matchCategory = selectedDrawerCat === 'Semua' || item.category === selectedDrawerCat;
     return matchSearch && matchCategory;
   });
+
+  // Top-level Dropdown Groups matching Screenshot Layout
+  const navGroups: Array<{
+    key: 'belajar' | 'mainUji' | 'guruProfil';
+    label: string;
+    icon: React.ComponentType<{ size?: number; className?: string }>;
+    iconColor: string;
+    itemIds: string[];
+  }> = [
+    {
+      key: 'belajar',
+      label: 'Belajar',
+      icon: BookOpen,
+      iconColor: 'text-emerald-600',
+      itemIds: ['materi', 'video', 'elibrary', 'glosarium', 'galeriPresiden', 'galeriTokoh', 'nusantara'],
+    },
+    {
+      key: 'mainUji',
+      label: 'Main & Uji',
+      icon: Gamepad2,
+      iconColor: 'text-indigo-600',
+      itemIds: ['game', 'simulasi', 'objek3d', 'kuis', 'bankSoal', 'simulasiTka', 'simulasiCpns', 'simulasiPppk'],
+    },
+    {
+      key: 'guruProfil',
+      label: 'Guru & Profil',
+      icon: Briefcase,
+      iconColor: 'text-rose-600',
+      itemIds: ['toolGuru', 'dashboardGuru', 'kompetisi', 'forum', 'agenda', 'tentang'],
+    },
+  ];
+
+  // Header live search results across menus and material chapters
+  const searchQuery = headerSearch.trim().toLowerCase();
+  const headerNavMatches = searchQuery
+    ? navItems
+        .filter(
+          (item) =>
+            item.label.toLowerCase().includes(searchQuery) ||
+            item.desc.toLowerCase().includes(searchQuery) ||
+            item.category.toLowerCase().includes(searchQuery)
+        )
+        .slice(0, 6)
+    : [];
+  const headerMaterialMatches = searchQuery
+    ? materialsData
+        .filter(
+          (mat) =>
+            mat.title.toLowerCase().includes(searchQuery) ||
+            mat.summary.toLowerCase().includes(searchQuery) ||
+            `kelas ${mat.grade}`.toLowerCase().includes(searchQuery)
+        )
+        .slice(0, 4)
+    : [];
 
   // Helper for hierarchical Breadcrumbs
   const currentNavItem = navItems.find((n) => n.id === activeMenu) || navItems[0];
@@ -317,97 +415,290 @@ export default function App() {
   const breadcrumbs = getBreadcrumbs();
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-sky-100/70 via-sky-50 to-white text-slate-800 flex flex-col font-sans transition-all duration-200">
-      {/* Top Banner & Header */}
-      <header className="sticky top-0 z-40 bg-sky-600 text-white shadow-md border-b border-sky-500">
-        {/* Top Flag Strip */}
-        <div className="h-1.5 w-full flex">
-          <div className="bg-red-600 w-1/2 h-full" />
-          <div className="bg-white w-1/2 h-full" />
-        </div>
+    <div className="min-h-screen bg-gradient-to-b from-sky-50 via-white to-sky-50/40 text-slate-800 flex flex-col font-sans transition-all duration-200">
+      {/* 1. Soft Pastel Sky-Blue Top Hero Logo Banner (Non-sticky so page breathes) */}
+      <div className="w-full bg-gradient-to-b from-sky-200/80 via-sky-100/75 to-sky-50/90 border-b border-sky-200/60 py-5 sm:py-7 px-4 flex justify-center items-center">
+        <button
+          type="button"
+          onClick={() => {
+            handleNavigate('beranda');
+            setOpenNavGroup(null);
+          }}
+          className="bg-white rounded-3xl p-3 sm:p-4 w-44 h-44 sm:w-52 sm:h-52 shadow-xl shadow-sky-900/10 border border-white hover:scale-[1.02] active:scale-[0.99] transition-transform flex items-center justify-center cursor-pointer"
+          title="Kembali ke Beranda Ruang Pendidikan Pancasila"
+        >
+          <img
+            src="/assets/aistudio/Logo_Pembelajaran_Interaktif_Pendidikan_Pancasila__1__a1b85239.png"
+            alt="Logo Ruang Pendidikan Pancasila SMA Negeri 1 Mande"
+            className="w-full h-full object-contain"
+          />
+        </button>
+      </div>
 
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 min-h-16 py-2 flex flex-wrap items-center justify-between gap-2.5">
-          {/* Logo Brand with Uploaded Official Logo */}
-          <div
-            onClick={() => {
-              setActiveMenu('beranda');
-              setSelectedMaterial(null);
-              sound.playClick();
-            }}
-            className="flex items-center gap-2.5 md:gap-3 cursor-pointer group select-none shrink-0"
-          >
-            <div className="w-11 h-11 md:w-12 md:h-12 rounded-2xl bg-white p-1 shadow-md group-hover:scale-105 transition-transform flex items-center justify-center overflow-hidden border border-sky-300 shrink-0">
-              <img
-                src="/assets/aistudio/Logo_Pembelajaran_Interaktif_Pendidikan_Pancasila__1__a1b85239.png"
-                alt="Logo Ruang Pendidikan Pancasila SMA Negeri 1 Mande"
-                className="w-full h-full object-contain"
-              />
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-sm md:text-base text-white tracking-tight drop-shadow-sm">
-                  Pendidikan Pancasila
-                </span>
-                <span className="text-[10px] bg-amber-400 text-sky-950 font-black px-1.5 py-0.2 rounded shadow-sm">
-                  SMANDE
-                </span>
-              </div>
-              <p className="text-[11px] text-sky-100 font-medium truncate max-w-[200px] sm:max-w-none">
-                SMA Negeri 1 Mande • Kurikulum Merdeka
-              </p>
-            </div>
-          </div>
-
-          {/* Right Controls: Clock, Role, Sound, and Menu Navigasi strictly at Top-Right Corner */}
-          <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap justify-end ml-auto">
-            {/* Real-time Clock, Day & Date Widget in Header */}
-            <ClockWidget variant="header" />
-
-            {/* Role Switcher */}
-            <div className="hidden xl:flex items-center gap-1 bg-sky-700/80 border border-sky-400/40 p-1 rounded-xl text-xs shrink-0">
-              {(['siswa', 'guru', 'admin'] as const).map((r) => (
-                <button
-                  key={r}
-                  onClick={() => handleRoleChange(r)}
-                  className={`px-2 py-0.5 rounded-lg capitalize font-bold transition-all ${
-                    currentUser.role === r
-                      ? 'bg-white text-sky-700 shadow-sm'
-                      : 'text-sky-100 hover:text-white'
-                  }`}
-                >
-                  {r}
-                </button>
-              ))}
-            </div>
-
-            {/* Sound Toggle */}
+      {/* 2. Clean Sticky White Navbar (Title Left, Hamburger + Live Search Right, 4 Primary Tabs Row) */}
+      <header
+        ref={navContainerRef}
+        className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-sky-100 shadow-xs"
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-2.5 space-y-2.5">
+          {/* Row 1: 2-line Deep Sky-Blue Brand Title + Outlined Hamburger & Search Bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
             <button
-              onClick={toggleSound}
-              title={isSoundMuted ? 'Nyalakan Audio SFX' : 'Bisukan Audio SFX'}
-              className="p-1.5 sm:p-2 rounded-xl bg-sky-700 hover:bg-sky-500 text-white transition-colors border border-sky-400/50 shrink-0"
-            >
-              {isSoundMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-            </button>
-
-            {/* Tombol Menu Navigasi di Pojok Kanan Atas */}
-            <button
+              type="button"
               onClick={() => {
-                setIsNavDrawerOpen(true);
-                sound.playClick();
+                handleNavigate('beranda');
+                setOpenNavGroup(null);
               }}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-sky-800 hover:bg-sky-50 font-extrabold text-xs sm:text-sm rounded-xl shadow-md transition-all border border-sky-200 active:scale-95 group shrink-0"
-              title={`Buka ${navItems.length} Menu Pembelajaran`}
+              className="text-left group cursor-pointer shrink-0"
             >
-              <Menu size={17} className="text-sky-700 stroke-[2.5] group-hover:rotate-6 transition-transform" />
-              <span className="font-extrabold whitespace-nowrap">Menu Navigasi</span>
-              <span className="text-[10px] bg-sky-100 text-sky-800 font-black px-1.5 py-0.5 rounded-md hidden md:inline">
-                {navItems.length} Menu ▾
-              </span>
+              <div className="font-extrabold text-sm sm:text-base md:text-lg text-sky-800 leading-tight tracking-tight group-hover:text-sky-600 transition-colors">
+                Ruang Pembelajaran Interaktif
+              </div>
+              <div className="font-extrabold text-sm sm:text-base md:text-lg text-sky-800 leading-tight tracking-tight group-hover:text-sky-600 transition-colors">
+                Pendidikan Pancasila
+              </div>
             </button>
+
+            <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+              {/* Outlined Square Hamburger Button (Pojok Kanan Atas) */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsNavDrawerOpen(true);
+                  setOpenNavGroup(null);
+                  sound.playClick();
+                }}
+                aria-label="Buka Menu Navigasi Lengkap"
+                title={`Buka semua ${navItems.length} menu navigasi`}
+                className="w-10 h-10 rounded-xl border-2 border-sky-600 bg-white hover:bg-sky-50 text-sky-700 flex items-center justify-center transition-colors shrink-0 cursor-pointer active:scale-95"
+              >
+                <Menu size={20} strokeWidth={2.25} />
+              </button>
+
+              {/* Rounded-Full Live Search Bar with / Shortcut */}
+              <div className="relative flex-1 sm:w-72 md:w-80">
+                <Search
+                  size={16}
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={headerSearch}
+                  onFocus={() => setIsSearchFocused(true)}
+                  onChange={(e) => {
+                    setHeaderSearch(e.target.value);
+                    setIsSearchFocused(true);
+                  }}
+                  placeholder="Cari materi, tool, game... (tekan /)"
+                  aria-label="Cari materi, tool, dan fitur pembelajaran"
+                  className="w-full pl-9 pr-8 py-2 text-xs sm:text-sm bg-white border border-sky-200 hover:border-sky-300 focus:border-sky-500 focus:ring-2 focus:ring-sky-200 rounded-full text-slate-700 placeholder:text-slate-400 focus:outline-none transition-all"
+                />
+                {headerSearch && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setHeaderSearch('');
+                      searchInputRef.current?.focus();
+                    }}
+                    aria-label="Hapus pencarian"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+
+                {/* Search Results Dropdown */}
+                {isSearchFocused && searchQuery.length > 0 && (
+                  <div className="absolute right-0 left-0 sm:left-auto sm:w-96 mt-2 bg-white rounded-2xl shadow-2xl border border-sky-200 p-2.5 z-50 max-h-96 overflow-y-auto space-y-2">
+                    {headerNavMatches.length === 0 && headerMaterialMatches.length === 0 ? (
+                      <div className="py-5 text-center text-xs text-slate-500">
+                        Tidak ditemukan hasil untuk &ldquo;{headerSearch}&rdquo;
+                      </div>
+                    ) : (
+                      <>
+                        {headerNavMatches.length > 0 && (
+                          <div className="space-y-1">
+                            <div className="px-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                              Menu &amp; Fitur
+                            </div>
+                            {headerNavMatches.map((item) => {
+                              const Icon = item.icon;
+                              return (
+                                <button
+                                  key={item.id}
+                                  type="button"
+                                  onClick={() => {
+                                    handleNavigate(item.id);
+                                    setHeaderSearch('');
+                                    setIsSearchFocused(false);
+                                  }}
+                                  className="w-full flex items-center gap-2.5 p-2 rounded-xl hover:bg-sky-50 text-left transition-colors cursor-pointer"
+                                >
+                                  <div className="w-8 h-8 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center shrink-0">
+                                    <Icon size={16} />
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <div className="text-xs font-bold text-slate-800 truncate">
+                                      {item.label}
+                                    </div>
+                                    <div className="text-[11px] text-slate-500 truncate">
+                                      {item.desc}
+                                    </div>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {headerMaterialMatches.length > 0 && (
+                          <div className="space-y-1 pt-1 border-t border-slate-100">
+                            <div className="px-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                              Bab Materi Pembelajaran
+                            </div>
+                            {headerMaterialMatches.map((mat) => (
+                              <button
+                                key={mat.id}
+                                type="button"
+                                onClick={() => {
+                                  sound.playClick();
+                                  setSelectedGrade(mat.grade);
+                                  setActiveMenu('materi');
+                                  setSelectedMaterial(mat);
+                                  setHeaderSearch('');
+                                  setIsSearchFocused(false);
+                                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                                }}
+                                className="w-full flex items-center gap-2.5 p-2 rounded-xl hover:bg-sky-50 text-left transition-colors cursor-pointer"
+                              >
+                                <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 text-xs font-black">
+                                  {mat.grade}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="text-xs font-bold text-slate-800 truncate">
+                                    Bab {mat.chapterNumber}: {mat.title}
+                                  </div>
+                                  <div className="text-[11px] text-slate-500 truncate">
+                                    Kelas {mat.grade} • Kurikulum Merdeka
+                                  </div>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
+
+          {/* Row 2: 4 Clean Horizontal Navigation Tabs (Beranda, Belajar ▾, Main & Uji ▾, Guru & Profil ▾) */}
+          <nav aria-label="Navigasi Utama" className="flex items-center gap-2 sm:gap-3 flex-wrap pt-0.5">
+            {/* Tab 1: Beranda */}
+            <button
+              type="button"
+              onClick={() => {
+                handleNavigate('beranda');
+                setOpenNavGroup(null);
+              }}
+              className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs sm:text-sm font-bold whitespace-nowrap shrink-0 transition-all cursor-pointer ${
+                activeMenu === 'beranda'
+                  ? 'border-2 border-sky-500 bg-sky-50/70 text-sky-700 shadow-2xs'
+                  : 'border border-transparent text-slate-600 hover:text-sky-800 hover:bg-sky-50'
+              }`}
+            >
+              <Home size={15} className={activeMenu === 'beranda' ? 'text-sky-600' : 'text-amber-600'} />
+              <span>Beranda</span>
+            </button>
+
+            {/* Tabs 2-4: Grouped Dropdown Menus */}
+            {navGroups.map((group) => {
+              const GroupIcon = group.icon;
+              const isOpen = openNavGroup === group.key;
+              const isGroupActive = group.itemIds.includes(activeMenu);
+              const groupItems = group.itemIds
+                .map((id) => navItems.find((n) => n.id === id))
+                .filter((n): n is (typeof navItems)[number] => Boolean(n));
+
+              return (
+                <div key={group.key} className="relative">
+                  <button
+                    type="button"
+                    aria-expanded={isOpen}
+                    onClick={() => {
+                      sound.playClick();
+                      setOpenNavGroup(isOpen ? null : group.key);
+                      setIsSearchFocused(false);
+                    }}
+                    className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-bold whitespace-nowrap shrink-0 transition-all cursor-pointer ${
+                      isGroupActive || isOpen
+                        ? 'border-2 border-sky-500 bg-sky-50/70 text-sky-800'
+                        : 'border border-transparent text-slate-700 hover:text-sky-800 hover:bg-sky-50'
+                    }`}
+                  >
+                    <GroupIcon size={15} className={group.iconColor} />
+                    <span>{group.label}</span>
+                    <ChevronDown
+                      size={14}
+                      className={`text-slate-400 transition-transform duration-150 ${
+                        isOpen ? 'rotate-180 text-sky-700' : ''
+                      }`}
+                    />
+                  </button>
+
+                  {isOpen && (
+                    <div className="absolute left-0 mt-2 w-72 sm:w-80 bg-white rounded-2xl shadow-2xl border border-sky-200 p-2 z-50 space-y-1 max-h-[75vh] overflow-y-auto">
+                      {groupItems.map((item) => {
+                        const ItemIcon = item.icon;
+                        const isItemActive = activeMenu === item.id;
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => {
+                              handleNavigate(item.id);
+                              setOpenNavGroup(null);
+                            }}
+                            className={`w-full flex items-start gap-2.5 p-2.5 rounded-xl text-left transition-all cursor-pointer ${
+                              isItemActive
+                                ? 'bg-sky-600 text-white shadow-sm'
+                                : 'hover:bg-sky-50 text-slate-700'
+                            }`}
+                          >
+                            <div
+                              className={`p-2 rounded-lg shrink-0 ${
+                                isItemActive ? 'bg-white/20 text-white' : 'bg-sky-100 text-sky-700'
+                              }`}
+                            >
+                              <ItemIcon size={16} />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="font-bold text-xs sm:text-sm leading-snug truncate">
+                                {item.label}
+                              </div>
+                              <div
+                                className={`text-[11px] truncate ${
+                                  isItemActive ? 'text-sky-100' : 'text-slate-500'
+                                }`}
+                              >
+                                {item.desc}
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </nav>
         </div>
 
-        {/* Modal / Slide-Over Drawer Navigasi Pengunjung (Opens from Top-Right) */}
+        {/* Slide-Over Drawer Navigasi Pengunjung (Opens from Top-Right Hamburger) */}
         {isNavDrawerOpen && (
           <div
             onClick={() => setIsNavDrawerOpen(false)}
@@ -417,8 +708,8 @@ export default function App() {
               onClick={(e) => e.stopPropagation()}
               className="bg-white text-slate-800 w-full max-w-md h-full flex flex-col shadow-2xl overflow-hidden border-l border-sky-200"
             >
-              {/* Drawer Header with Logo and Close */}
-              <div className="bg-sky-600 text-white p-5 border-b border-sky-500 flex items-center justify-between">
+              {/* Drawer Header */}
+              <div className="bg-sky-700 text-white p-5 border-b border-sky-600 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-xl bg-white p-1 shadow-md flex items-center justify-center">
                     <img
@@ -434,32 +725,44 @@ export default function App() {
                 </div>
 
                 <button
+                  type="button"
                   onClick={() => setIsNavDrawerOpen(false)}
-                  className="p-2 rounded-xl bg-sky-700 hover:bg-sky-500 text-white transition-colors"
+                  className="p-2 rounded-xl bg-sky-800 hover:bg-sky-600 text-white transition-colors cursor-pointer"
                   title="Tutup Menu"
                 >
                   <X size={20} />
                 </button>
               </div>
 
-              {/* Mode Pengunjung Banner */}
-              <div className="bg-sky-50 p-3.5 border-b border-sky-100 flex items-center justify-between text-xs">
+              {/* Drawer Utilities: Role Switcher, Sound Toggle, Clock */}
+              <div className="bg-sky-50 p-3.5 border-b border-sky-100 flex flex-wrap items-center justify-between gap-2 text-xs">
                 <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="font-bold text-sky-900">Mode Pengunjung Aktif</span>
+                  <Clock size={14} className="text-sky-700" />
+                  <span className="font-bold text-sky-900">Mode Pengunjung</span>
                 </div>
-                <div className="flex gap-1">
-                  {(['siswa', 'guru', 'admin'] as const).map((r) => (
-                    <button
-                      key={r}
-                      onClick={() => handleRoleChange(r)}
-                      className={`px-2 py-0.5 rounded capitalize font-bold text-[11px] ${
-                        currentUser.role === r ? 'bg-sky-600 text-white' : 'bg-white text-slate-600 border border-sky-200'
-                      }`}
-                    >
-                      {r}
-                    </button>
-                  ))}
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={toggleSound}
+                    title={isSoundMuted ? 'Nyalakan Audio SFX' : 'Bisukan Audio SFX'}
+                    className="p-1.5 rounded-lg bg-white hover:bg-sky-100 text-sky-700 border border-sky-200 transition-colors cursor-pointer"
+                  >
+                    {isSoundMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
+                  </button>
+                  <div className="flex gap-1">
+                    {(['siswa', 'guru', 'admin'] as const).map((r) => (
+                      <button
+                        key={r}
+                        type="button"
+                        onClick={() => handleRoleChange(r)}
+                        className={`px-2 py-0.5 rounded capitalize font-bold text-[11px] cursor-pointer ${
+                          currentUser.role === r ? 'bg-sky-600 text-white' : 'bg-white text-slate-600 border border-sky-200'
+                        }`}
+                      >
+                        {r}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -476,8 +779,9 @@ export default function App() {
                   />
                   {drawerSearch && (
                     <button
+                      type="button"
                       onClick={() => setDrawerSearch('')}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs w-4 h-4 rounded-full flex items-center justify-center bg-slate-200"
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs w-4 h-4 rounded-full flex items-center justify-center bg-slate-200 cursor-pointer"
                     >
                       ✕
                     </button>
@@ -491,8 +795,9 @@ export default function App() {
                     return (
                       <button
                         key={cat}
+                        type="button"
                         onClick={() => setSelectedDrawerCat(cat)}
-                        className={`px-2.5 py-1 rounded-xl shrink-0 transition-all flex items-center gap-1 ${
+                        className={`px-2.5 py-1 rounded-xl shrink-0 transition-all flex items-center gap-1 cursor-pointer ${
                           selectedDrawerCat === cat
                             ? 'bg-sky-600 text-white shadow-xs'
                             : 'bg-sky-50 text-sky-800 hover:bg-sky-100 border border-sky-200/60'
@@ -510,14 +815,15 @@ export default function App() {
                 </div>
               </div>
 
-              {/* All Menus in Drawer - Single Structured Stack Downwards */}
+              {/* All Menus in Drawer */}
               <div className="flex-1 overflow-y-auto p-4 space-y-2">
                 <div className="text-[11px] font-extrabold uppercase tracking-wider text-sky-800 mb-2 flex items-center justify-between">
                   <span>Daftar Menu Pembelajaran ({filteredNavItems.length}):</span>
                   {selectedDrawerCat !== 'Semua' && (
                     <button
+                      type="button"
                       onClick={() => setSelectedDrawerCat('Semua')}
-                      className="text-[10px] text-sky-600 hover:underline font-bold"
+                      className="text-[10px] text-sky-600 hover:underline font-bold cursor-pointer"
                     >
                       Tampilkan Semua
                     </button>
@@ -547,11 +853,12 @@ export default function App() {
                           </div>
                         )}
                         <button
+                          type="button"
                           onClick={() => {
                             handleNavigate(item.id);
                             setIsNavDrawerOpen(false);
                           }}
-                          className={`w-full flex items-start gap-3 p-3 rounded-2xl transition-all text-left border ${
+                          className={`w-full flex items-start gap-3 p-3 rounded-2xl transition-all text-left border cursor-pointer ${
                             isActive
                               ? 'bg-sky-600 text-white border-sky-500 shadow-md ring-2 ring-sky-300'
                               : 'bg-white hover:bg-sky-50 text-slate-800 border-sky-100 hover:border-sky-300'
@@ -593,7 +900,7 @@ export default function App() {
               {/* Drawer Footer */}
               <div className="p-4 bg-sky-50 border-t border-sky-100 text-xs text-center font-bold text-sky-900 flex items-center justify-center gap-1.5">
                 <span>Made In</span>
-                <Heart size={14} className="fill-red-500 text-red-500 inline animate-pulse" />
+                <Heart size={14} className="fill-red-500 text-red-500 inline" />
                 <span>Guru Munawar Rois, S.Pd.</span>
               </div>
             </div>
@@ -601,12 +908,28 @@ export default function App() {
         )}
       </header>
 
-      {/* Hierarchical Breadcrumbs Navigation Bar */}
+      {/* 3. Deep Ocean-Blue Scrolling Welcome Strip */}
+      <div className="w-full bg-gradient-to-r from-sky-800 via-blue-700 to-sky-800 text-white py-2 overflow-hidden border-b border-sky-900/20">
+        <div className="animate-marquee text-xs sm:text-sm font-bold tracking-wide">
+          <div className="flex items-center shrink-0">
+            <span className="mx-6">★ Selamat Datang di Pembelajaran Pendidikan Pancasila ★</span>
+            <span className="mx-6">★ Selamat Datang di Pembelajaran Pendidikan Pancasila ★</span>
+            <span className="mx-6">★ Selamat Datang di Pembelajaran Pendidikan Pancasila ★</span>
+          </div>
+          <div className="flex items-center shrink-0" aria-hidden="true">
+            <span className="mx-6">★ Selamat Datang di Pembelajaran Pendidikan Pancasila ★</span>
+            <span className="mx-6">★ Selamat Datang di Pembelajaran Pendidikan Pancasila ★</span>
+            <span className="mx-6">★ Selamat Datang di Pembelajaran Pendidikan Pancasila ★</span>
+          </div>
+        </div>
+      </div>
+
+      {/* 4. Hierarchical Breadcrumbs Navigation Bar */}
       <nav
         aria-label="Breadcrumb"
         className="bg-white/95 backdrop-blur-sm border-b border-sky-200/80 shadow-2xs"
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-center justify-between gap-4">
           <ol className="flex items-center gap-1.5 text-xs sm:text-sm text-slate-500 overflow-x-auto whitespace-nowrap py-0.5">
             {breadcrumbs.map((crumb, idx) => {
               const isFirst = idx === 0;
@@ -647,31 +970,27 @@ export default function App() {
         </div>
       </nav>
 
-      {/* Main Container Content with Neat Window Frame Navigation */}
+      {/* Main Container Content */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
-        <NavigationWindowFrame
-          activeMenuId={activeMenu}
-          navItems={navItems}
-          onNavigate={handleNavigate}
-          onGoBack={handleGoBack}
-          canGoBack={navigationHistory.length > 1 || selectedMaterial !== null}
-        >
+        {(() => {
+          const renderSections = () => (
+            <>
         {/* ================= 1. BERANDA ================= */}
         {activeMenu === 'beranda' && (
           <div className="space-y-8 animate-fade-in">
-            {/* Hero Welcome Banner in Sky Blue theme */}
-            <div className="bg-gradient-to-br from-sky-600 via-sky-500 to-blue-600 text-white rounded-3xl p-6 md:p-10 shadow-xl shadow-sky-600/15 relative overflow-hidden">
+            {/* Hero Welcome Banner in Deep Ocean Blue */}
+            <div className="bg-gradient-to-br from-sky-800 via-blue-800 to-sky-900 text-white rounded-3xl p-6 md:p-10 shadow-xl shadow-sky-900/20 relative overflow-hidden">
               <div className="max-w-3xl space-y-4 relative z-10">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 text-white text-xs font-bold">
-                  <span>🇮🇩 Selamat Datang di Portal Pembelajaran Pancasila SMA Negeri 1 Mande</span>
+                <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/15 backdrop-blur-sm border border-white/25 text-white text-xs font-bold">
+                  <span>🇮🇩 SMA Negeri 1 Mande</span>
                 </div>
 
                 <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight leading-tight">
-                  Tumbuh Menjadi Pelajar Berkarakter, Bernalar Kritis & Berjiwa Pancasila
+                  Belajar Pendidikan <span className="text-amber-300">Pancasila</span>
                 </h1>
 
-                <p className="text-sm md:text-base text-sky-50 leading-relaxed max-w-2xl font-medium">
-                  Platform pembelajaran interaktif Kurikulum Merdeka Fase E & F di <b>SMA Negeri 1 Mande (SMANDE)</b>. Dilengkapi materi berbasis HOTS, 5 game edukasi, kuis penilaian otomatis, simulasi demokrasi, serta objek 3D 4 Pilar Kebangsaan.
+                <p className="text-sm md:text-base text-sky-100 leading-relaxed max-w-2xl font-medium">
+                  Platform pembelajaran interaktif Kurikulum Merdeka Fase E & F di <b>SMA Negeri 1 Mande (SMANDE)</b>. Tumbuh menjadi pelajar berkarakter, bernalar kritis, dilengkapi materi HOTS, 5 game edukasi, simulasi demokrasi, dan objek 3D 4 Pilar Kebangsaan.
                 </p>
 
                 {/* Structured Action Buttons in Hero Banner */}
@@ -1944,7 +2263,23 @@ export default function App() {
             </div>
           </div>
         )}
-        </NavigationWindowFrame>
+            </>
+          );
+
+          return activeMenu === 'beranda' ? (
+            renderSections()
+          ) : (
+            <NavigationWindowFrame
+              activeMenuId={activeMenu}
+              navItems={navItems}
+              onNavigate={handleNavigate}
+              onGoBack={handleGoBack}
+              canGoBack={navigationHistory.length > 1 || selectedMaterial !== null}
+            >
+              {renderSections()}
+            </NavigationWindowFrame>
+          );
+        })()}
       </main>
 
       {/* Footer in Deep Sky Blue */}

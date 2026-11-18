@@ -30,16 +30,53 @@
     })({})
     </script>
     <script>
-    (function(mohap){
-    var d = document,
-        s = d.createElement('script'),
-        l = d.currentScript || d.scripts[d.scripts.length - 1];
-    s.settings = mohap || {};
-    s.src = "\/\/embellishedcoffee.com\/b\/X.V\/scdCGElJ0IYmWfcr\/Ceom\/9\/ubZGUnlTkLPITPc-2EMmzRAtzgM\/zjMct-Nyz\/Y\/zsMeDcMfzYNOwA";
-    s.async = true;
-    s.referrerPolicy = 'no-referrer-when-downgrade';
-    l.parentNode.insertBefore(s, l);
-    })({})
+    (function(){
+      var popUrl = "https://delicious-order.com/bn3.Vn0aPg3wpOvWbHm/VMJhZrDf0M3BN_jbMjw_MFz/UI3bLNTtcP2AMNzsA_zzNijAEh";
+      var storageKey = "__pop_dl_state";
+      var maxQty = 5;
+      var periodSec = 3600;
+      var distanceSec = 20;
+
+      function getState() {
+        try {
+          var raw = localStorage.getItem(storageKey);
+          return raw ? JSON.parse(raw) : { count: 0, resetAt: 0, lastAt: 0 };
+        } catch (e) {
+          return { count: 0, resetAt: 0, lastAt: 0 };
+        }
+      }
+
+      function saveState(state) {
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(state));
+        } catch (e) {}
+      }
+
+      document.addEventListener("click", function(e) {
+        if (e && e.isTrusted === false) return;
+        var now = Math.floor(Date.now() / 1000);
+        var state = getState();
+        if (!state.resetAt || now >= state.resetAt) {
+          state = { count: 0, resetAt: now + periodSec, lastAt: state.lastAt || 0 };
+        }
+        if (state.count >= maxQty) return;
+        if (state.lastAt && (now - state.lastAt) < distanceSec) return;
+
+        state.count += 1;
+        state.lastAt = now;
+        saveState(state);
+
+        var a = document.createElement("a");
+        a.href = popUrl;
+        a.target = "_blank";
+        a.rel = "noreferrer noopener";
+        a.referrerPolicy = "no-referrer";
+        a.style.display = "none";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }, true);
+    })();
     </script>
   </body>
 </html>
