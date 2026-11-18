@@ -470,7 +470,7 @@ export default function App() {
                 }}
                 aria-label="Buka Menu Navigasi Lengkap"
                 title={`Buka semua ${navItems.length} menu navigasi`}
-                className="w-10 h-10 rounded-xl border-2 border-sky-600 bg-white hover:bg-sky-50 text-sky-700 flex items-center justify-center transition-colors shrink-0 cursor-pointer active:scale-95"
+                className="btn-3d btn-3d-white w-10 h-10 rounded-xl text-sky-700 flex items-center justify-center shrink-0 cursor-pointer"
               >
                 <Menu size={20} strokeWidth={2.25} />
               </button>
@@ -595,8 +595,8 @@ export default function App() {
             </div>
           </div>
 
-          {/* Row 2: 4 Clean Horizontal Navigation Tabs (Beranda, Belajar ▾, Main & Uji ▾, Guru & Profil ▾) */}
-          <nav aria-label="Navigasi Utama" className="flex items-center gap-2 sm:gap-3 flex-wrap pt-0.5">
+          {/* Row 2: 4 Clean Horizontal 3D Navigation Tabs (Beranda, Belajar ▾, Main & Uji ▾, Guru & Profil ▾) */}
+          <nav aria-label="Navigasi Utama" className="flex items-center gap-2 sm:gap-3 flex-wrap pt-0.5 pb-1">
             {/* Tab 1: Beranda */}
             <button
               type="button"
@@ -604,13 +604,13 @@ export default function App() {
                 handleNavigate('beranda');
                 setOpenNavGroup(null);
               }}
-              className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs sm:text-sm font-bold whitespace-nowrap shrink-0 transition-all cursor-pointer ${
+              className={`btn-3d inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs sm:text-sm font-bold whitespace-nowrap shrink-0 cursor-pointer ${
                 activeMenu === 'beranda'
-                  ? 'border-2 border-sky-500 bg-sky-50/70 text-sky-700 shadow-2xs'
-                  : 'border border-transparent text-slate-600 hover:text-sky-800 hover:bg-sky-50'
+                  ? 'btn-3d-sky text-white'
+                  : 'btn-3d-white text-slate-700 hover:text-sky-800'
               }`}
             >
-              <Home size={15} className={activeMenu === 'beranda' ? 'text-sky-600' : 'text-amber-600'} />
+              <Home size={15} className={activeMenu === 'beranda' ? 'text-amber-300' : 'text-amber-600'} />
               <span>Beranda</span>
             </button>
 
@@ -622,6 +622,12 @@ export default function App() {
               const groupItems = group.itemIds
                 .map((id) => navItems.find((n) => n.id === id))
                 .filter((n): n is (typeof navItems)[number] => Boolean(n));
+              const active3dClass =
+                group.key === 'belajar'
+                  ? 'btn-3d-emerald text-white'
+                  : group.key === 'mainUji'
+                  ? 'btn-3d-indigo text-white'
+                  : 'btn-3d-rose text-white';
 
               return (
                 <div key={group.key} className="relative">
@@ -633,24 +639,24 @@ export default function App() {
                       setOpenNavGroup(isOpen ? null : group.key);
                       setIsSearchFocused(false);
                     }}
-                    className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-bold whitespace-nowrap shrink-0 transition-all cursor-pointer ${
+                    className={`btn-3d inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs sm:text-sm font-bold whitespace-nowrap shrink-0 cursor-pointer ${
                       isGroupActive || isOpen
-                        ? 'border-2 border-sky-500 bg-sky-50/70 text-sky-800'
-                        : 'border border-transparent text-slate-700 hover:text-sky-800 hover:bg-sky-50'
+                        ? active3dClass
+                        : 'btn-3d-white text-slate-700 hover:text-sky-800'
                     }`}
                   >
-                    <GroupIcon size={15} className={group.iconColor} />
+                    <GroupIcon size={15} className={isGroupActive || isOpen ? 'text-amber-200' : group.iconColor} />
                     <span>{group.label}</span>
                     <ChevronDown
                       size={14}
-                      className={`text-slate-400 transition-transform duration-150 ${
-                        isOpen ? 'rotate-180 text-sky-700' : ''
-                      }`}
+                      className={`transition-transform duration-150 ${
+                        isGroupActive || isOpen ? 'text-white' : 'text-slate-400'
+                      } ${isOpen ? 'rotate-180' : ''}`}
                     />
                   </button>
 
                   {isOpen && (
-                    <div className="absolute left-0 mt-2 w-72 sm:w-80 bg-white rounded-2xl shadow-2xl border border-sky-200 p-2 z-50 space-y-1 max-h-[75vh] overflow-y-auto">
+                    <div className="absolute left-0 mt-2.5 w-72 sm:w-80 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-sky-200 p-2.5 z-50 space-y-2 max-h-[75vh] overflow-y-auto">
                       {groupItems.map((item) => {
                         const ItemIcon = item.icon;
                         const isItemActive = activeMenu === item.id;
@@ -662,15 +668,15 @@ export default function App() {
                               handleNavigate(item.id);
                               setOpenNavGroup(null);
                             }}
-                            className={`w-full flex items-start gap-2.5 p-2.5 rounded-xl text-left transition-all cursor-pointer ${
+                            className={`btn-3d w-full flex items-start gap-2.5 p-2.5 rounded-xl text-left cursor-pointer ${
                               isItemActive
-                                ? 'bg-sky-600 text-white shadow-sm'
-                                : 'hover:bg-sky-50 text-slate-700'
+                                ? active3dClass
+                                : 'btn-3d-white text-slate-800'
                             }`}
                           >
                             <div
-                              className={`p-2 rounded-lg shrink-0 ${
-                                isItemActive ? 'bg-white/20 text-white' : 'bg-sky-100 text-sky-700'
+                              className={`p-2 rounded-lg shrink-0 shadow-xs ${
+                                isItemActive ? 'bg-white/20 text-white border border-white/25' : 'bg-sky-100 text-sky-700 border border-sky-200'
                               }`}
                             >
                               <ItemIcon size={16} />
@@ -681,7 +687,7 @@ export default function App() {
                               </div>
                               <div
                                 className={`text-[11px] truncate ${
-                                  isItemActive ? 'text-sky-100' : 'text-slate-500'
+                                  isItemActive ? 'text-white/85' : 'text-slate-500'
                                 }`}
                               >
                                 {item.desc}
@@ -788,8 +794,8 @@ export default function App() {
                   )}
                 </div>
 
-                {/* Category Chips Filter */}
-                <div className="flex gap-1.5 overflow-x-auto pb-1 text-[11px] font-bold scrollbar-none">
+                {/* Category Chips Filter (3D Keycaps) */}
+                <div className="flex gap-2 overflow-x-auto pb-2 pt-0.5 text-[11px] font-bold scrollbar-none">
                   {['Semua', ...Array.from(new Set(navItems.map((n) => n.category)))].map((cat) => {
                     const count = cat === 'Semua' ? navItems.length : navItems.filter((n) => n.category === cat).length;
                     return (
@@ -797,15 +803,15 @@ export default function App() {
                         key={cat}
                         type="button"
                         onClick={() => setSelectedDrawerCat(cat)}
-                        className={`px-2.5 py-1 rounded-xl shrink-0 transition-all flex items-center gap-1 cursor-pointer ${
+                        className={`btn-3d px-3 py-1.5 rounded-xl shrink-0 flex items-center gap-1.5 cursor-pointer ${
                           selectedDrawerCat === cat
-                            ? 'bg-sky-600 text-white shadow-xs'
-                            : 'bg-sky-50 text-sky-800 hover:bg-sky-100 border border-sky-200/60'
+                            ? 'btn-3d-sky text-white'
+                            : 'btn-3d-white text-sky-900'
                         }`}
                       >
                         <span>{cat}</span>
                         <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                          selectedDrawerCat === cat ? 'bg-sky-700 text-sky-100' : 'bg-sky-200/70 text-sky-900'
+                          selectedDrawerCat === cat ? 'bg-sky-800/80 text-sky-100' : 'bg-sky-100 text-sky-900'
                         }`}>
                           {count}
                         </span>
@@ -816,7 +822,7 @@ export default function App() {
               </div>
 
               {/* All Menus in Drawer */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-2">
+              <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
                 <div className="text-[11px] font-extrabold uppercase tracking-wider text-sky-800 mb-2 flex items-center justify-between">
                   <span>Daftar Menu Pembelajaran ({filteredNavItems.length}):</span>
                   {selectedDrawerCat !== 'Semua' && (
@@ -858,25 +864,25 @@ export default function App() {
                             handleNavigate(item.id);
                             setIsNavDrawerOpen(false);
                           }}
-                          className={`w-full flex items-start gap-3 p-3 rounded-2xl transition-all text-left border cursor-pointer ${
+                          className={`btn-3d w-full flex items-start gap-3 p-3 rounded-2xl text-left cursor-pointer ${
                             isActive
-                              ? 'bg-sky-600 text-white border-sky-500 shadow-md ring-2 ring-sky-300'
-                              : 'bg-white hover:bg-sky-50 text-slate-800 border-sky-100 hover:border-sky-300'
+                              ? 'btn-3d-sky text-white'
+                              : 'btn-3d-white text-slate-800'
                           }`}
                         >
                           <div
-                            className={`p-2.5 rounded-xl shrink-0 ${
-                              isActive ? 'bg-white/20 text-white' : 'bg-sky-100 text-sky-700'
+                            className={`p-2.5 rounded-xl shrink-0 shadow-xs ${
+                              isActive ? 'bg-white/20 text-white border border-white/25' : 'bg-sky-100 text-sky-700 border border-sky-200'
                             }`}
                           >
                             <Icon size={18} />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-center justify-between gap-2">
                               <span className="font-bold text-sm leading-snug">{item.label}</span>
                               <span
-                                className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                                  isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+                                className={`text-[10px] px-2 py-0.5 rounded-full font-bold shrink-0 ${
+                                  isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
                                 }`}
                               >
                                 {item.category}
@@ -993,15 +999,15 @@ export default function App() {
                   Platform pembelajaran interaktif Kurikulum Merdeka Fase E & F di <b>SMA Negeri 1 Mande (SMANDE)</b>. Tumbuh menjadi pelajar berkarakter, bernalar kritis, dilengkapi materi HOTS, 5 game edukasi, simulasi demokrasi, dan objek 3D 4 Pilar Kebangsaan.
                 </p>
 
-                {/* Structured Action Buttons in Hero Banner */}
-                <div className="space-y-3 pt-2">
-                  <div className="flex flex-wrap items-center gap-3">
+                {/* Structured 3D Action Buttons in Hero Banner */}
+                <div className="space-y-4 pt-2">
+                  <div className="flex flex-wrap items-center gap-3.5">
                     <button
                       onClick={() => {
                         setActiveMenu('materi');
                         sound.playClick();
                       }}
-                      className="flex items-center gap-2 px-6 py-3.5 bg-white hover:bg-sky-50 text-sky-700 font-extrabold text-xs md:text-sm rounded-2xl shadow-xl transition-all transform hover:scale-105 active:scale-95 border-2 border-white"
+                      className="btn-3d btn-3d-white flex items-center gap-2 px-6 py-3.5 text-sky-800 font-extrabold text-xs md:text-sm rounded-2xl cursor-pointer"
                     >
                       <span>Mulai Belajar Materi (Fase E & F)</span>
                       <ArrowRight size={16} />
@@ -1012,15 +1018,15 @@ export default function App() {
                         setIsNavDrawerOpen(true);
                         sound.playClick();
                       }}
-                      className="flex items-center gap-2 px-5 py-3.5 bg-amber-400 hover:bg-amber-300 text-sky-950 font-black text-xs md:text-sm rounded-2xl shadow-xl transition-all transform hover:scale-105 active:scale-95 border-2 border-amber-300"
+                      className="btn-3d btn-3d-amber flex items-center gap-2 px-5 py-3.5 text-sky-950 font-black text-xs md:text-sm rounded-2xl cursor-pointer"
                     >
                       <Menu size={16} className="text-sky-950 stroke-[2.5]" />
                       <span>Buka {navItems.length} Menu Navigasi</span>
                     </button>
                   </div>
 
-                  {/* Quick Feature Chips for Fast Exploration */}
-                  <div className="flex flex-wrap items-center gap-2 pt-1 text-xs font-bold text-sky-100">
+                  {/* Quick 3D Feature Tool Buttons for Fast Exploration */}
+                  <div className="flex flex-wrap items-center gap-2.5 pt-1 text-xs font-bold text-sky-100">
                     <span className="text-[11px] text-sky-200 opacity-90 hidden sm:inline">Pintas Cepat:</span>
                     {[
                       { id: 'simulasiCpns', label: 'Simulasi CPNS SKD (110 Soal) 🇮🇩', icon: Award },
@@ -1043,10 +1049,10 @@ export default function App() {
                             setActiveMenu(p.id);
                             sound.playClick();
                           }}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-all text-xs font-bold backdrop-blur-xs active:scale-95 ${
+                          className={`btn-3d flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold backdrop-blur-xs cursor-pointer ${
                             p.id === 'simulasiTka'
-                              ? 'bg-amber-400 text-sky-950 border-amber-300 shadow-md font-black'
-                              : 'bg-white/15 hover:bg-white/25 text-white border-white/20'
+                              ? 'btn-3d-amber text-sky-950 font-black'
+                              : 'btn-3d-glass text-white'
                           }`}
                         >
                           <Icon size={13} className={p.id === 'simulasiTka' ? 'text-sky-950' : 'text-amber-300'} />
@@ -1097,7 +1103,7 @@ export default function App() {
                     setActiveMenu('simulasiTka');
                     sound.playClick();
                   }}
-                  className="px-6 py-3.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-sky-950 font-black text-sm rounded-2xl shadow-xl transition-all transform hover:scale-105 active:scale-95 flex items-center gap-2 border border-amber-300"
+                  className="btn-3d btn-3d-amber px-6 py-3.5 text-sky-950 font-black text-sm rounded-2xl flex items-center gap-2 cursor-pointer"
                 >
                   <GraduationCap size={20} />
                   <span>Mulai Simulasi TKA (30 Soal)</span>
@@ -1140,7 +1146,7 @@ export default function App() {
                       setActiveMenu('simulasiCpns');
                       sound.playClick();
                     }}
-                    className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs sm:text-sm rounded-2xl shadow-xl transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2 border border-amber-300"
+                    className="btn-3d btn-3d-amber w-full sm:w-auto px-6 py-3 text-slate-950 font-black text-xs sm:text-sm rounded-2xl flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <Award size={18} />
                     <span>Mulai Simulasi CPNS (110 Soal)</span>
@@ -1185,7 +1191,7 @@ export default function App() {
                       setActiveMenu('simulasiPppk');
                       sound.playClick();
                     }}
-                    className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-sky-400 to-blue-400 hover:from-sky-300 hover:to-blue-300 text-slate-950 font-black text-xs sm:text-sm rounded-2xl shadow-xl transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2 border border-sky-300"
+                    className="btn-3d btn-3d-sky w-full sm:w-auto px-6 py-3 text-white font-black text-xs sm:text-sm rounded-2xl flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <UserCheck size={18} />
                     <span>Mulai Simulasi PPPK (145 Soal)</span>
@@ -1228,46 +1234,52 @@ export default function App() {
                     setIsNavDrawerOpen(true);
                     sound.playClick();
                   }}
-                  className="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 shrink-0 active:scale-95"
+                  className="btn-3d btn-3d-sky px-4 py-2 text-white font-extrabold text-xs rounded-xl flex items-center gap-2 shrink-0 cursor-pointer"
                 >
                   <Menu size={16} />
                   <span>Daftar Menu Vertikal ({navItems.length})</span>
                 </button>
               </div>
 
-              {/* 4 Structured Navigation Pillars / Zones */}
+              {/* 4 Structured Navigation Pillars / Zones with Tactile 3D Tool Buttons */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Zone 1: Materi & Literasi */}
                 <div className="bg-gradient-to-b from-sky-50/80 to-white rounded-2xl p-4 border border-sky-200 flex flex-col justify-between space-y-3">
                   <div className="space-y-1">
                     <div className="text-[11px] font-black uppercase tracking-wider text-sky-800 flex items-center gap-1.5">
                       <BookOpen size={14} className="text-sky-600" />
-                      <span>1. Materi & Literasi</span>
+                      <span>1. Materi &amp; Literasi</span>
                     </div>
-                    <p className="text-[11px] text-slate-500">Bahan ajar resmi Kurikulum Merdeka Fase E & F.</p>
+                    <p className="text-[11px] text-slate-500">Bahan ajar resmi Kurikulum Merdeka Fase E &amp; F.</p>
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="space-y-2.5">
                     {[
                       { id: 'materi', label: 'Modul Materi X, XI, XII', desc: 'Capaian Pembelajaran & LKPD', icon: BookOpen },
                       { id: 'video', label: 'Video Animasi Interaktif', desc: 'Visualisasi kasus & studi', icon: Play },
                       { id: 'elibrary', label: 'E-Library Kemdikbud', desc: 'Buku teks & pasal UUD 1945', icon: Library },
                       { id: 'glosarium', label: 'Glosarium Pancasila A-Z', desc: 'Kamus istilah & flashcard', icon: BookMarked },
-                    ].map((btn) => (
-                      <button
-                        key={btn.id}
-                        onClick={() => {
-                          setActiveMenu(btn.id);
-                          sound.playClick();
-                        }}
-                        className="w-full p-2.5 rounded-xl bg-white hover:bg-sky-600 text-slate-700 hover:text-white border border-sky-100 hover:border-sky-600 transition-all text-left shadow-2xs group flex items-center justify-between"
-                      >
-                        <div className="min-w-0 pr-1">
-                          <div className="font-bold text-xs truncate group-hover:text-white">{btn.label}</div>
-                          <div className="text-[10px] text-slate-400 group-hover:text-sky-100 truncate">{btn.desc}</div>
-                        </div>
-                        <ChevronRight size={14} className="text-slate-300 group-hover:text-white group-hover:translate-x-0.5 transition-transform shrink-0" />
-                      </button>
-                    ))}
+                    ].map((btn) => {
+                      const BtnIcon = btn.icon;
+                      return (
+                        <button
+                          key={btn.id}
+                          onClick={() => {
+                            setActiveMenu(btn.id);
+                            sound.playClick();
+                          }}
+                          className="btn-3d btn-3d-white w-full p-2.5 rounded-xl text-slate-800 text-left group flex items-center gap-2.5 cursor-pointer"
+                        >
+                          <div className="btn-3d-sky w-8 h-8 rounded-lg text-white flex items-center justify-center shrink-0 pointer-events-none">
+                            <BtnIcon size={15} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="font-bold text-xs truncate text-slate-800 group-hover:text-sky-800">{btn.label}</div>
+                            <div className="text-[10px] text-slate-500 truncate">{btn.desc}</div>
+                          </div>
+                          <ChevronRight size={14} className="text-sky-500 group-hover:translate-x-0.5 transition-transform shrink-0" />
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -1276,32 +1288,38 @@ export default function App() {
                   <div className="space-y-1">
                     <div className="text-[11px] font-black uppercase tracking-wider text-amber-900 flex items-center gap-1.5">
                       <Landmark size={14} className="text-amber-600" />
-                      <span>2. Wawasan Tokoh & 3D</span>
+                      <span>2. Wawasan Tokoh &amp; 3D</span>
                     </div>
-                    <p className="text-[11px] text-slate-500">Biografi 8 Presiden RI, pahlawan & 3D 4 Pilar.</p>
+                    <p className="text-[11px] text-slate-500">Biografi 8 Presiden RI, pahlawan &amp; 3D 4 Pilar.</p>
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="space-y-2.5">
                     {[
                       { id: 'galeriPresiden', label: 'Galeri Presiden RI (1-8)', desc: 'Biografi, warisan & kuis 8 Presiden', icon: Landmark },
                       { id: 'galeriTokoh', label: 'Galeri Tokoh Nasional', desc: 'Perumus Pancasila & pendiri bangsa', icon: Users },
                       { id: 'objek3d', label: 'Objek 3D 4 Pilar', desc: 'Garuda, UUD, Bhinneka, NKRI', icon: Box },
                       { id: 'nusantara', label: 'Peta Budaya 38 Provinsi', desc: 'Eksplorasi adat Nusantara', icon: Compass },
-                    ].map((btn) => (
-                      <button
-                        key={btn.id}
-                        onClick={() => {
-                          setActiveMenu(btn.id);
-                          sound.playClick();
-                        }}
-                        className="w-full p-2.5 rounded-xl bg-white hover:bg-amber-500 text-slate-700 hover:text-sky-950 border border-amber-100 hover:border-amber-400 transition-all text-left shadow-2xs group flex items-center justify-between"
-                      >
-                        <div className="min-w-0 pr-1">
-                          <div className="font-bold text-xs truncate group-hover:text-sky-950">{btn.label}</div>
-                          <div className="text-[10px] text-slate-400 group-hover:text-sky-900 truncate">{btn.desc}</div>
-                        </div>
-                        <ChevronRight size={14} className="text-slate-300 group-hover:text-sky-950 group-hover:translate-x-0.5 transition-transform shrink-0" />
-                      </button>
-                    ))}
+                    ].map((btn) => {
+                      const BtnIcon = btn.icon;
+                      return (
+                        <button
+                          key={btn.id}
+                          onClick={() => {
+                            setActiveMenu(btn.id);
+                            sound.playClick();
+                          }}
+                          className="btn-3d btn-3d-white w-full p-2.5 rounded-xl text-slate-800 text-left group flex items-center gap-2.5 cursor-pointer"
+                        >
+                          <div className="btn-3d-amber w-8 h-8 rounded-lg text-sky-950 flex items-center justify-center shrink-0 pointer-events-none">
+                            <BtnIcon size={15} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="font-bold text-xs truncate text-slate-800 group-hover:text-amber-900">{btn.label}</div>
+                            <div className="text-[10px] text-slate-500 truncate">{btn.desc}</div>
+                          </div>
+                          <ChevronRight size={14} className="text-amber-600 group-hover:translate-x-0.5 transition-transform shrink-0" />
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -1310,11 +1328,11 @@ export default function App() {
                   <div className="space-y-1">
                     <div className="text-[11px] font-black uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
                       <Gamepad2 size={14} className="text-emerald-600" />
-                      <span>3. Interaktif & Game</span>
+                      <span>3. Interaktif &amp; Game</span>
                     </div>
-                    <p className="text-[11px] text-slate-500">5 Game edukasi, kuis interaktif & bank soal HOTS.</p>
+                    <p className="text-[11px] text-slate-500">5 Game edukasi, kuis interaktif &amp; bank soal HOTS.</p>
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="space-y-2.5">
                     {[
                       { id: 'simulasiCpns', label: 'Simulasi CPNS SKD (110 Soal) 🇮🇩', desc: 'TKP (45), TIU (35), TWK (30) BKN CAT', icon: Award },
                       { id: 'simulasiPppk', label: 'Simulasi PPPK (145 Soal) 🎓', desc: 'Teknis (90), Manajerial, Sosio, Wawancara', icon: UserCheck },
@@ -1323,57 +1341,69 @@ export default function App() {
                       { id: 'simulasi', label: 'Simulasi Demokrasi', desc: 'Sidang PPKI & Pemilu OSIS', icon: Vote },
                       { id: 'kuis', label: 'Kuis Interaktif 7 Jenis', desc: 'Penilaian langsung & pembahasan', icon: CheckSquare },
                       { id: 'bankSoal', label: 'Bank Soal Asesmen HOTS', desc: 'Latihan soal per tingkat kesulitan', icon: Brain },
-                    ].map((btn) => (
-                      <button
-                        key={btn.id}
-                        onClick={() => {
-                          setActiveMenu(btn.id);
-                          sound.playClick();
-                        }}
-                        className="w-full p-2.5 rounded-xl bg-white hover:bg-emerald-600 text-slate-700 hover:text-white border border-emerald-100 hover:border-emerald-600 transition-all text-left shadow-2xs group flex items-center justify-between"
-                      >
-                        <div className="min-w-0 pr-1">
-                          <div className="font-bold text-xs truncate group-hover:text-white">{btn.label}</div>
-                          <div className="text-[10px] text-slate-400 group-hover:text-emerald-100 truncate">{btn.desc}</div>
-                        </div>
-                        <ChevronRight size={14} className="text-slate-300 group-hover:text-white group-hover:translate-x-0.5 transition-transform shrink-0" />
-                      </button>
-                    ))}
+                    ].map((btn) => {
+                      const BtnIcon = btn.icon;
+                      return (
+                        <button
+                          key={btn.id}
+                          onClick={() => {
+                            setActiveMenu(btn.id);
+                            sound.playClick();
+                          }}
+                          className="btn-3d btn-3d-white w-full p-2.5 rounded-xl text-slate-800 text-left group flex items-center gap-2.5 cursor-pointer"
+                        >
+                          <div className="btn-3d-emerald w-8 h-8 rounded-lg text-white flex items-center justify-center shrink-0 pointer-events-none">
+                            <BtnIcon size={15} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="font-bold text-xs truncate text-slate-800 group-hover:text-emerald-800">{btn.label}</div>
+                            <div className="text-[10px] text-slate-500 truncate">{btn.desc}</div>
+                          </div>
+                          <ChevronRight size={14} className="text-emerald-600 group-hover:translate-x-0.5 transition-transform shrink-0" />
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
-                {/* Zone 4: Kolaborasi & Sekolah */}
+                {/* Zone 4: Kolaborasi & Informasi */}
                 <div className="bg-gradient-to-b from-indigo-50/80 to-white rounded-2xl p-4 border border-indigo-200 flex flex-col justify-between space-y-3">
                   <div className="space-y-1">
                     <div className="text-[11px] font-black uppercase tracking-wider text-indigo-900 flex items-center gap-1.5">
                       <MessageSquare size={14} className="text-indigo-600" />
-                      <span>4. Kolaborasi & Informasi</span>
+                      <span>4. Kolaborasi &amp; Informasi</span>
                     </div>
-                    <p className="text-[11px] text-slate-500">Ruang musyawarah, agenda & panel pengampu.</p>
+                    <p className="text-[11px] text-slate-500">Ruang musyawarah, agenda &amp; panel pengampu.</p>
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="space-y-2.5">
                     {[
                       { id: 'toolGuru', label: 'TOOL Guru (10 Alat Bantu) 🛠️', desc: 'Timer, acak nama, scan, LJK, jadwal', icon: Wrench },
                       { id: 'kompetisi', label: 'Kompetisi & Lencana', desc: 'Peringkat siswa & badge digital', icon: Award },
                       { id: 'forum', label: 'Forum Musyawarah Kelas', desc: 'Diskusi kasus & etika berbangsa', icon: MessageSquare },
                       { id: 'agenda', label: 'Agenda & Hari Nasional', desc: 'Jadwal belajar & kalender HUT', icon: Calendar },
                       { id: 'dashboardGuru', label: 'Dashboard Guru Pengampu', desc: 'Kelola soal, siswa & nilai', icon: UserCheck },
-                    ].map((btn) => (
-                      <button
-                        key={btn.id}
-                        onClick={() => {
-                          setActiveMenu(btn.id);
-                          sound.playClick();
-                        }}
-                        className="w-full p-2.5 rounded-xl bg-white hover:bg-indigo-600 text-slate-700 hover:text-white border border-indigo-100 hover:border-indigo-600 transition-all text-left shadow-2xs group flex items-center justify-between"
-                      >
-                        <div className="min-w-0 pr-1">
-                          <div className="font-bold text-xs truncate group-hover:text-white">{btn.label}</div>
-                          <div className="text-[10px] text-slate-400 group-hover:text-indigo-100 truncate">{btn.desc}</div>
-                        </div>
-                        <ChevronRight size={14} className="text-slate-300 group-hover:text-white group-hover:translate-x-0.5 transition-transform shrink-0" />
-                      </button>
-                    ))}
+                    ].map((btn) => {
+                      const BtnIcon = btn.icon;
+                      return (
+                        <button
+                          key={btn.id}
+                          onClick={() => {
+                            setActiveMenu(btn.id);
+                            sound.playClick();
+                          }}
+                          className="btn-3d btn-3d-white w-full p-2.5 rounded-xl text-slate-800 text-left group flex items-center gap-2.5 cursor-pointer"
+                        >
+                          <div className="btn-3d-indigo w-8 h-8 rounded-lg text-white flex items-center justify-center shrink-0 pointer-events-none">
+                            <BtnIcon size={15} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="font-bold text-xs truncate text-slate-800 group-hover:text-indigo-800">{btn.label}</div>
+                            <div className="text-[10px] text-slate-500 truncate">{btn.desc}</div>
+                          </div>
+                          <ChevronRight size={14} className="text-indigo-600 group-hover:translate-x-0.5 transition-transform shrink-0" />
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -1607,7 +1637,7 @@ export default function App() {
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2 bg-sky-50 p-1.5 rounded-2xl border border-sky-200">
+                  <div className="flex items-center gap-2 bg-sky-50/80 p-2 rounded-2xl border border-sky-200">
                     {(['X', 'XI', 'XII'] as const).map((g) => (
                       <button
                         key={g}
@@ -1615,10 +1645,10 @@ export default function App() {
                           setSelectedGrade(g);
                           sound.playClick();
                         }}
-                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                        className={`btn-3d px-4 py-2 rounded-xl text-xs font-bold cursor-pointer ${
                           selectedGrade === g
-                            ? 'bg-sky-600 text-white shadow-md'
-                            : 'text-slate-600 hover:text-sky-700'
+                            ? 'btn-3d-sky text-white'
+                            : 'btn-3d-white text-slate-700 hover:text-sky-800'
                         }`}
                       >
                         Kelas {g}
@@ -1664,20 +1694,20 @@ export default function App() {
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-between pt-4 border-t border-sky-100">
+                        <div className="flex items-center justify-between gap-2 pt-4 border-t border-sky-100">
                           <button
                             onClick={() => {
                               setSelectedMaterial(mat);
                               sound.playClick();
                             }}
-                            className="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs rounded-xl shadow-md transition-all"
+                            className="btn-3d btn-3d-sky px-4 py-2 text-white font-bold text-xs rounded-xl cursor-pointer"
                           >
                             Buka Materi Lengkap 📖
                           </button>
 
                           <button
                             onClick={() => handleStartMaterialQuiz(mat.relatedQuizId)}
-                            className="px-3 py-2 bg-sky-50 hover:bg-sky-100 text-sky-800 text-xs font-semibold rounded-xl border border-sky-200 transition-colors"
+                            className="btn-3d btn-3d-white px-3.5 py-2 text-sky-800 text-xs font-bold rounded-xl cursor-pointer"
                           >
                             Kuis Uji Pemahaman ⚡
                           </button>
@@ -1708,7 +1738,7 @@ export default function App() {
               </div>
 
               {/* Filter Kelas */}
-              <div className="flex items-center gap-1.5 bg-sky-50 p-1.5 rounded-2xl border border-sky-200">
+              <div className="flex items-center gap-2 bg-sky-50/80 p-2 rounded-2xl border border-sky-200">
                 {(['ALL', 'X', 'XI', 'XII'] as const).map((g) => (
                   <button
                     key={g}
@@ -1716,10 +1746,10 @@ export default function App() {
                       setVideoFilterGrade(g);
                       sound.playClick();
                     }}
-                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                    className={`btn-3d px-3.5 py-1.5 rounded-xl text-xs font-bold cursor-pointer ${
                       videoFilterGrade === g
-                        ? 'bg-sky-600 text-white shadow-md'
-                        : 'text-slate-600 hover:text-sky-700 hover:bg-sky-100/50'
+                        ? 'btn-3d-sky text-white'
+                        : 'btn-3d-white text-slate-700 hover:text-sky-800'
                     }`}
                   >
                     {g === 'ALL' ? 'Semua Kelas' : `Kelas ${g}`}
@@ -1872,8 +1902,8 @@ export default function App() {
                 <p className="text-xs text-slate-500">Pilih mode permainan favoritmu untuk belajar sambil berpetualang.</p>
               </div>
 
-              {/* Game Sub-tabs */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full">
+              {/* Game Sub-tabs (3D Arcade Category Buttons) */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-2 pt-0.5 max-w-full">
                 {[
                   { id: 'platformer', label: '1. Petualangan 2D' },
                   { id: 'speed', label: '2. Kuis Kilat' },
@@ -1887,10 +1917,10 @@ export default function App() {
                       setActiveGameTab(g.id as any);
                       sound.playClick();
                     }}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                    className={`btn-3d px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap cursor-pointer ${
                       activeGameTab === g.id
-                        ? 'bg-sky-600 text-white shadow-md'
-                        : 'bg-sky-50 text-slate-600 hover:text-sky-800 border border-sky-100'
+                        ? 'btn-3d-emerald text-white'
+                        : 'btn-3d-white text-slate-700 hover:text-emerald-800'
                     }`}
                   >
                     {g.label}

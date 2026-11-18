@@ -67,16 +67,16 @@ export const SimulationsView: React.FC<{ onBadgeEarned?: (badgeTitle: string) =>
           Belajar berdemokrasi bukan sekadar menghafal definisi buku, tetapi berlatih mengambil keputusan berani, bijaksana, dan berlandaskan musyawarah mufakat demi kemaslahatan bersama.
         </p>
 
-        {/* Simulation Selector Pills */}
-        <div className="flex items-center gap-2 mt-6 overflow-x-auto pb-1">
+        {/* Simulation Selector Pills (3D Category Buttons) */}
+        <div className="flex items-center gap-2.5 mt-6 overflow-x-auto pb-2 pt-0.5">
           {simulationsData.map((sim) => (
             <button
               key={sim.id}
               onClick={() => handleReset(sim)}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+              className={`btn-3d px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap cursor-pointer ${
                 selectedSim.id === sim.id
-                  ? 'bg-white text-sky-800 font-black shadow-md'
-                  : 'bg-sky-800/80 text-sky-100 hover:text-white border border-sky-500/50'
+                  ? 'btn-3d-amber text-sky-950 font-black'
+                  : 'btn-3d-glass text-white'
               }`}
             >
               {sim.title}

@@ -40,7 +40,7 @@ export const NavigationWindowFrame: React.FC<NavigationWindowFrameProps> = ({
               <button
                 type="button"
                 onClick={onGoBack}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 text-xs font-bold transition-colors shrink-0 cursor-pointer"
+                className="btn-3d btn-3d-white inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sky-800 text-xs font-bold shrink-0 cursor-pointer"
                 title="Kembali ke halaman sebelumnya"
               >
                 <ArrowLeft size={14} />
@@ -48,7 +48,7 @@ export const NavigationWindowFrame: React.FC<NavigationWindowFrameProps> = ({
               </button>
             )}
 
-            <div className="w-10 h-10 rounded-xl bg-sky-100 border border-sky-200 text-sky-700 flex items-center justify-center shrink-0">
+            <div className="btn-3d-sky w-10 h-10 rounded-xl text-white flex items-center justify-center shrink-0">
               <CurrentIcon size={20} />
             </div>
 
@@ -77,7 +77,7 @@ export const NavigationWindowFrame: React.FC<NavigationWindowFrameProps> = ({
             <button
               type="button"
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-              className="p-2 rounded-xl bg-slate-50 hover:bg-sky-50 text-slate-600 hover:text-sky-700 border border-slate-200 transition-colors cursor-pointer"
+              className="btn-3d btn-3d-white p-2 rounded-xl text-slate-600 hover:text-sky-700 cursor-pointer"
               title="Gulir ke atas halaman"
             >
               <RotateCcw size={14} />
@@ -85,9 +85,9 @@ export const NavigationWindowFrame: React.FC<NavigationWindowFrameProps> = ({
           </div>
         </div>
 
-        {/* Category Sibling Quick Links */}
+        {/* Category Sibling Quick Links (3D Category Buttons) */}
         {siblingItems.length > 1 && (
-          <div className="px-4 py-2 sm:px-5 bg-sky-50/60 border-t border-sky-100 flex items-center gap-1.5 overflow-x-auto">
+          <div className="px-4 py-2.5 sm:px-5 bg-sky-50/70 border-t border-sky-100 flex items-center gap-2 overflow-x-auto">
             <span className="text-[11px] font-bold text-slate-500 shrink-0 mr-1">
               {currentItem.category}:
             </span>
@@ -99,10 +99,10 @@ export const NavigationWindowFrame: React.FC<NavigationWindowFrameProps> = ({
                   key={sib.id}
                   type="button"
                   onClick={() => onNavigate(sib.id)}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+                  className={`btn-3d inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap shrink-0 cursor-pointer ${
                     isSibActive
-                      ? 'bg-sky-600 text-white shadow-xs'
-                      : 'bg-white text-slate-700 hover:text-sky-800 hover:bg-sky-100 border border-sky-200/80'
+                      ? 'btn-3d-sky text-white'
+                      : 'btn-3d-white text-slate-700 hover:text-sky-800'
                   }`}
                 >
                   <SibIcon size={13} className={isSibActive ? 'text-amber-300' : 'text-sky-600'} />

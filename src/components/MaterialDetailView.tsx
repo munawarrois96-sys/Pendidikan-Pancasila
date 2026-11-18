@@ -95,7 +95,7 @@ export const MaterialDetailView: React.FC<MaterialDetailProps> = ({
 
           <button
             onClick={() => onTakeQuiz(material.relatedQuizId)}
-            className="flex items-center gap-2 px-5 py-2.5 bg-amber-400 hover:bg-amber-300 text-sky-950 font-black text-xs md:text-sm rounded-xl shadow-lg transition-all transform hover:scale-105 active:scale-95"
+            className="btn-3d btn-3d-amber flex items-center gap-2 px-5 py-2.5 text-sky-950 font-black text-xs md:text-sm rounded-xl cursor-pointer"
           >
             <Sparkles size={16} />
             <span>Uji Pemahaman Saya (Kuis)</span>
@@ -104,8 +104,8 @@ export const MaterialDetailView: React.FC<MaterialDetailProps> = ({
         </div>
       </div>
 
-      {/* Navigation Sub-Tabs */}
-      <div className="flex items-center gap-2 border-b border-sky-200 pb-2 overflow-x-auto">
+      {/* Navigation Sub-Tabs (3D Category Buttons) */}
+      <div className="flex items-center gap-2.5 border-b border-sky-200 pb-3 pt-0.5 overflow-x-auto">
         {[
           { id: 'teori', label: '📖 Materi & Teori', icon: BookOpen },
           { id: 'video', label: '🎬 Video Pembelajaran', icon: Play },
@@ -118,10 +118,10 @@ export const MaterialDetailView: React.FC<MaterialDetailProps> = ({
               setActiveTab(tab.id as any);
               sound.playClick();
             }}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold whitespace-nowrap transition-all ${
+            className={`btn-3d flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold whitespace-nowrap cursor-pointer ${
               activeTab === tab.id
-                ? 'bg-sky-600 text-white shadow-md'
-                : 'bg-white text-slate-600 hover:text-sky-700 hover:bg-sky-50 border border-sky-100'
+                ? 'btn-3d-sky text-white'
+                : 'btn-3d-white text-slate-700 hover:text-sky-800'
             }`}
           >
             <span>{tab.label}</span>

@@ -126,16 +126,16 @@ export const PancasilaPuzzleGame: React.FC<{ onCompleted?: (pts: number) => void
           <h3 className="text-lg md:text-xl font-bold">Menyusun Struktur Hukum & Konsep Kebangsaan</h3>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2.5">
           <button
             onClick={() => {
               setActiveTab('hierarki');
               sound.playClick();
             }}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`btn-3d px-3.5 py-2 rounded-xl text-xs font-bold cursor-pointer ${
               activeTab === 'hierarki'
-                ? 'bg-red-600 text-white shadow-md'
-                : 'bg-slate-800 text-slate-400 hover:text-white'
+                ? 'btn-3d-rose text-white'
+                : 'btn-3d-slate text-slate-200 hover:text-white'
             }`}
           >
             Hierarki Peraturan (UU 12/2011)
@@ -145,13 +145,13 @@ export const PancasilaPuzzleGame: React.FC<{ onCompleted?: (pts: number) => void
               setActiveTab('pasangSila');
               sound.playClick();
             }}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`btn-3d px-3.5 py-2 rounded-xl text-xs font-bold cursor-pointer ${
               activeTab === 'pasangSila'
-                ? 'bg-red-600 text-white shadow-md'
-                : 'bg-slate-800 text-slate-400 hover:text-white'
+                ? 'btn-3d-rose text-white'
+                : 'btn-3d-slate text-slate-200 hover:text-white'
             }`}
           >
-            Memasangkan Sila & Perilaku
+            Memasangkan Sila &amp; Perilaku
           </button>
         </div>
       </div>

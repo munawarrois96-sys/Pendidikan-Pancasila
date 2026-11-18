@@ -255,24 +255,24 @@ export function NationalGalleryView({
           </div>
         </div>
 
-        {/* Primary Tab Switcher */}
-        <div className="mt-8 pt-4 border-t border-white/15 flex flex-wrap items-center gap-3">
+        {/* Primary Tab Switcher (3D Category Buttons) */}
+        <div className="mt-8 pt-4 border-t border-white/15 flex flex-wrap items-center gap-3 pb-1">
           <button
             onClick={() => {
               setActiveTab('presiden');
               sound.playClick();
             }}
-            className={`flex items-center gap-2.5 px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm ${
+            className={`btn-3d flex items-center gap-2.5 px-5 py-2.5 rounded-xl font-bold text-sm cursor-pointer ${
               activeTab === 'presiden'
-                ? 'bg-white text-sky-800 shadow-md ring-2 ring-white/50'
-                : 'bg-white/10 text-white hover:bg-white/20'
+                ? 'btn-3d-amber text-sky-950 font-black'
+                : 'btn-3d-glass text-white'
             }`}
           >
-            <Landmark size={18} className={activeTab === 'presiden' ? 'text-sky-700' : 'text-sky-200'} />
+            <Landmark size={18} className={activeTab === 'presiden' ? 'text-sky-950' : 'text-amber-300'} />
             <span>Presiden RI ke-1 s.d. ke-8</span>
             <span
               className={`text-xs px-2 py-0.5 rounded-full font-black ${
-                activeTab === 'presiden' ? 'bg-sky-100 text-sky-800' : 'bg-white/20 text-white'
+                activeTab === 'presiden' ? 'bg-sky-950/15 text-sky-950' : 'bg-white/20 text-white'
               }`}
             >
               8 Presiden
@@ -284,17 +284,17 @@ export function NationalGalleryView({
               setActiveTab('tokoh');
               sound.playClick();
             }}
-            className={`flex items-center gap-2.5 px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm ${
+            className={`btn-3d flex items-center gap-2.5 px-5 py-2.5 rounded-xl font-bold text-sm cursor-pointer ${
               activeTab === 'tokoh'
-                ? 'bg-white text-sky-800 shadow-md ring-2 ring-white/50'
-                : 'bg-white/10 text-white hover:bg-white/20'
+                ? 'btn-3d-amber text-sky-950 font-black'
+                : 'btn-3d-glass text-white'
             }`}
           >
-            <Users size={18} className={activeTab === 'tokoh' ? 'text-sky-700' : 'text-sky-200'} />
-            <span>Tokoh Nasional & Pahlawan</span>
+            <Users size={18} className={activeTab === 'tokoh' ? 'text-sky-950' : 'text-amber-300'} />
+            <span>Tokoh Nasional &amp; Pahlawan</span>
             <span
               className={`text-xs px-2 py-0.5 rounded-full font-black ${
-                activeTab === 'tokoh' ? 'bg-sky-100 text-sky-800' : 'bg-white/20 text-white'
+                activeTab === 'tokoh' ? 'bg-sky-950/15 text-sky-950' : 'bg-white/20 text-white'
               }`}
             >
               14 Tokoh

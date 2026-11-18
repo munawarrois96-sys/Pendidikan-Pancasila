@@ -101,8 +101,8 @@ export const ProfileAndCompetitionsView: React.FC<ProfileProps> = ({ user, stude
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-800 pb-2 overflow-x-auto">
+      {/* Tabs (3D Category Buttons) */}
+      <div className="flex items-center gap-2.5 border-b border-slate-800 pb-3 pt-0.5 overflow-x-auto">
         {[
           { id: 'profil', label: '👤 Portofolio Belajar', icon: UserCheck },
           { id: 'lencana', label: '🎖️ Lencana & Badges', icon: Award },
@@ -115,10 +115,10 @@ export const ProfileAndCompetitionsView: React.FC<ProfileProps> = ({ user, stude
               setActiveTab(tab.id as any);
               sound.playClick();
             }}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold whitespace-nowrap transition-all ${
+            className={`btn-3d flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold whitespace-nowrap cursor-pointer ${
               activeTab === tab.id
-                ? 'bg-red-600 text-white shadow-md'
-                : 'bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800'
+                ? 'btn-3d-rose text-white'
+                : 'btn-3d-slate text-slate-200 hover:text-white'
             }`}
           >
             <span>{tab.label}</span>

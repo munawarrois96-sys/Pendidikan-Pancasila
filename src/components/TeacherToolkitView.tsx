@@ -534,26 +534,29 @@ export const TeacherToolkitView: React.FC<TeacherToolkitProps> = ({ students: pr
         </div>
       </div>
 
-      {/* 10 Tool Navigation Selector Tabs */}
-      <div className="bg-white border-2 border-sky-200/90 rounded-2xl p-2 shadow-sm">
-        <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-1.5">
-          {toolsList.map((tool) => (
-            <button
-              key={tool.id}
-              onClick={() => {
-                sound.playClick();
-                setActiveTool(tool.id as any);
-              }}
-              className={`p-2.5 rounded-xl text-center transition-all flex flex-col items-center justify-center gap-1 ${
-                activeTool === tool.id
-                  ? 'bg-sky-600 text-white font-black shadow-md scale-[1.02] ring-2 ring-sky-300'
-                  : 'bg-sky-50/60 hover:bg-sky-100 text-slate-700 font-bold hover:text-sky-900 border border-sky-100'
-              }`}
-              title={tool.desc}
-            >
-              <span className="text-xs truncate w-full">{tool.label}</span>
-            </button>
-          ))}
+      {/* 10 Tool Navigation Selector Tabs (Tactile 3D Keycaps) */}
+      <div className="bg-sky-50/70 border-2 border-sky-200/90 rounded-2xl p-3 shadow-sm">
+        <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-2.5">
+          {toolsList.map((tool) => {
+            const isActive = activeTool === tool.id;
+            return (
+              <button
+                key={tool.id}
+                onClick={() => {
+                  sound.playClick();
+                  setActiveTool(tool.id as any);
+                }}
+                className={`btn-3d p-2.5 rounded-xl text-center flex flex-col items-center justify-center gap-1 cursor-pointer ${
+                  isActive
+                    ? 'btn-3d-sky text-white font-black'
+                    : 'btn-3d-white text-slate-700 font-bold hover:text-sky-900'
+                }`}
+                title={tool.desc}
+              >
+                <span className="text-xs truncate w-full">{tool.label}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 

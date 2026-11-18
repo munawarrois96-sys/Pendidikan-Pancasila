@@ -35,7 +35,7 @@ export const ELibraryView: React.FC = () => {
 
         {/* Search & Category Filter */}
         <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 pt-0.5">
             {categories.map((c) => (
               <button
                 key={c}
@@ -43,10 +43,10 @@ export const ELibraryView: React.FC = () => {
                   setSelectedCategory(c);
                   sound.playClick();
                 }}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+                className={`btn-3d px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap cursor-pointer ${
                   selectedCategory === c
-                    ? 'bg-white text-sky-800 font-bold shadow-md'
-                    : 'bg-sky-800/80 text-sky-100 hover:text-white border border-sky-500/60'
+                    ? 'btn-3d-amber text-sky-950 font-black'
+                    : 'btn-3d-glass text-white'
                 }`}
               >
                 {c}

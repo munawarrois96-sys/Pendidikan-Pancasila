@@ -1653,8 +1653,8 @@ export const ThreeDimensionalViewer: React.FC = () => {
             <b>NKRI</b> di SMA Negeri 1 Mande (SMANDE).
           </p>
 
-          {/* Quick Model Selector Pills in Banner */}
-          <div className="flex flex-wrap items-center gap-2 pt-2">
+          {/* Quick Model Selector Pills in Banner (3D Keycaps) */}
+          <div className="flex flex-wrap items-center gap-2.5 pt-2 pb-1">
             {(
               [
                 { id: 'garuda', label: '1. Garuda Pancasila', icon: Sparkles },
@@ -1669,10 +1669,10 @@ export const ThreeDimensionalViewer: React.FC = () => {
                   setActiveModel(m.id);
                   sound.playClick();
                 }}
-                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-black transition-all shadow-md active:scale-95 ${
+                className={`btn-3d flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black cursor-pointer ${
                   activeModel === m.id
-                    ? 'bg-amber-400 text-sky-950 scale-105 ring-2 ring-white/50'
-                    : 'bg-white/15 hover:bg-white/25 text-white border border-white/20'
+                    ? 'btn-3d-amber text-sky-950'
+                    : 'btn-3d-glass text-white'
                 }`}
               >
                 <m.icon size={14} />

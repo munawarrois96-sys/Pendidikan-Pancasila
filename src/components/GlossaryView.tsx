@@ -385,8 +385,8 @@ export const GlossaryView: React.FC = () => {
           </div>
         </div>
 
-        {/* Alphabet Filter Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+        {/* Alphabet Filter Pills (3D Keycaps) */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 pt-0.5 scrollbar-none">
           {ALPHABET.map((letter) => {
             const isSelected = selectedLetter === letter;
             return (
@@ -396,10 +396,10 @@ export const GlossaryView: React.FC = () => {
                   setSelectedLetter(letter);
                   sound.playClick();
                 }}
-                className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all shrink-0 ${
+                className={`btn-3d px-3 py-1.5 rounded-xl text-xs font-extrabold shrink-0 cursor-pointer ${
                   isSelected
-                    ? 'bg-sky-600 text-white shadow-sm scale-105'
-                    : 'bg-slate-50 hover:bg-sky-50 text-slate-600 hover:text-sky-800 border border-slate-200/80'
+                    ? 'btn-3d-sky text-white'
+                    : 'btn-3d-white text-slate-700 hover:text-sky-800'
                 }`}
               >
                 {letter}

@@ -320,15 +320,15 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
         <div className="flex items-center gap-3">
           <button
             onClick={activeTab === 'dataSiswa' ? handleExportStudentsCSV : handleExportAttemptsCSV}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-lg transition-all"
+            className="btn-3d btn-3d-emerald flex items-center gap-2 px-4 py-2 text-white font-bold text-xs rounded-xl cursor-pointer"
           >
             <FileSpreadsheet size={15} /> Unduh Rekap Excel (CSV)
           </button>
         </div>
       </div>
 
-      {/* Tabs Menu */}
-      <div className="flex items-center gap-2 border-b border-sky-200 pb-2 overflow-x-auto">
+      {/* Tabs Menu (3D Category Buttons) */}
+      <div className="flex items-center gap-2.5 border-b border-sky-200 pb-3 pt-0.5 overflow-x-auto">
         {[
           { id: 'dataSiswa', label: '👥 Data Siswa & Rombel (CRUD)', icon: Users },
           { id: 'rekapNilai', label: '📊 Rekap Nilai Siswa', icon: BarChart3 },
@@ -342,10 +342,10 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
               setActiveTab(tab.id as any);
               sound.playClick();
             }}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold whitespace-nowrap transition-all ${
+            className={`btn-3d flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold whitespace-nowrap cursor-pointer ${
               activeTab === tab.id
-                ? 'bg-sky-600 text-white shadow-md ring-2 ring-sky-300'
-                : 'bg-white text-slate-600 hover:text-sky-700 hover:bg-sky-50 border border-sky-100'
+                ? 'btn-3d-sky text-white'
+                : 'btn-3d-white text-slate-700 hover:text-sky-800'
             }`}
           >
             <span>{tab.label}</span>

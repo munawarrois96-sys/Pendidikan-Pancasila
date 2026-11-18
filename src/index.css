@@ -73,3 +73,130 @@ body {
   }
 }
 
+/* Tactile 3D Push-Button System across Menu Categories & Tools */
+.btn-3d {
+  position: relative;
+  transition: transform 140ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 140ms cubic-bezier(0.22, 1, 0.36, 1), filter 140ms ease;
+  will-change: transform;
+}
+
+.btn-3d-white {
+  background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
+  border: 1px solid #cbd5e1;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), 0 4px 0 #cbd5e1, 0 7px 14px -4px rgba(15, 23, 42, 0.14);
+}
+.btn-3d-white:hover {
+  transform: translateY(-1px);
+  background: linear-gradient(180deg, #ffffff 0%, #e0f2fe 100%);
+  border-color: #7dd3fc;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 1), 0 5px 0 #7dd3fc, 0 10px 18px -4px rgba(2, 132, 199, 0.22);
+}
+.btn-3d-white:active {
+  transform: translateY(3px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 1px 0 #94a3b8, 0 2px 4px rgba(15, 23, 42, 0.12);
+}
+
+.btn-3d-sky {
+  background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%);
+  border: 1px solid #0369a1;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48), 0 4px 0 #075985, 0 8px 16px -4px rgba(2, 132, 199, 0.35);
+}
+.btn-3d-sky:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), 0 5px 0 #075985, 0 11px 20px -4px rgba(2, 132, 199, 0.42);
+}
+.btn-3d-sky:active {
+  transform: translateY(3px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 1px 0 #075985, 0 2px 5px rgba(2, 132, 199, 0.25);
+}
+
+.btn-3d-amber {
+  background: linear-gradient(180deg, #fde047 0%, #f59e0b 100%);
+  border: 1px solid #d97706;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65), 0 4px 0 #b45309, 0 8px 16px -4px rgba(217, 119, 6, 0.34);
+}
+.btn-3d-amber:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75), 0 5px 0 #b45309, 0 11px 20px -4px rgba(217, 119, 6, 0.42);
+}
+.btn-3d-amber:active {
+  transform: translateY(3px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 1px 0 #b45309, 0 2px 5px rgba(217, 119, 6, 0.22);
+}
+
+.btn-3d-emerald {
+  background: linear-gradient(180deg, #34d399 0%, #059669 100%);
+  border: 1px solid #047857;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 4px 0 #065f46, 0 8px 16px -4px rgba(5, 150, 105, 0.35);
+}
+.btn-3d-emerald:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), 0 5px 0 #065f46, 0 11px 20px -4px rgba(5, 150, 105, 0.42);
+}
+.btn-3d-emerald:active {
+  transform: translateY(3px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 1px 0 #065f46, 0 2px 5px rgba(5, 150, 105, 0.25);
+}
+
+.btn-3d-indigo {
+  background: linear-gradient(180deg, #818cf8 0%, #4f46e5 100%);
+  border: 1px solid #4338ca;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 4px 0 #3730a3, 0 8px 16px -4px rgba(79, 70, 229, 0.35);
+}
+.btn-3d-indigo:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), 0 5px 0 #3730a3, 0 11px 20px -4px rgba(79, 70, 229, 0.42);
+}
+.btn-3d-indigo:active {
+  transform: translateY(3px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 1px 0 #3730a3, 0 2px 5px rgba(79, 70, 229, 0.25);
+}
+
+.btn-3d-rose {
+  background: linear-gradient(180deg, #fb7185 0%, #e11d48 100%);
+  border: 1px solid #be123c;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42), 0 4px 0 #9f1239, 0 8px 16px -4px rgba(225, 29, 72, 0.35);
+}
+.btn-3d-rose:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.52), 0 5px 0 #9f1239, 0 11px 20px -4px rgba(225, 29, 72, 0.42);
+}
+.btn-3d-rose:active {
+  transform: translateY(3px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 1px 0 #9f1239, 0 2px 5px rgba(225, 29, 72, 0.25);
+}
+
+.btn-3d-glass {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0.1) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.38), 0 4px 0 rgba(7, 89, 133, 0.85), 0 8px 16px -4px rgba(15, 23, 42, 0.28);
+}
+.btn-3d-glass:hover {
+  transform: translateY(-1px);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0.16) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 5px 0 rgba(7, 89, 133, 0.95), 0 11px 20px -4px rgba(15, 23, 42, 0.32);
+}
+.btn-3d-glass:active {
+  transform: translateY(3px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 1px 0 rgba(7, 89, 133, 0.85), 0 2px 4px rgba(15, 23, 42, 0.2);
+}
+
+.btn-3d-slate {
+  background: linear-gradient(180deg, #334155 0%, #1e293b 100%);
+  border: 1px solid #475569;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 4px 0 #0f172a, 0 8px 16px -4px rgba(2, 6, 23, 0.4);
+}
+.btn-3d-slate:hover {
+  transform: translateY(-1px);
+  background: linear-gradient(180deg, #475569 0%, #1e293b 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 5px 0 #0f172a, 0 10px 18px -4px rgba(2, 6, 23, 0.45);
+}
+.btn-3d-slate:active {
+  transform: translateY(3px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 1px 0 #0f172a, 0 2px 4px rgba(2, 6, 23, 0.3);
+}
