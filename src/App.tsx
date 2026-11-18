@@ -7,7 +7,6 @@ import { MaterialSection, Question, QuizAttempt, UserProfile, GradeLevel } from 
 import { sound } from './utils/audio';
 
 // Components
-import { PancasilaPlatformer } from './components/games/PancasilaPlatformer';
 import { SpeedQuizGame } from './components/games/SpeedQuizGame';
 import { DetectiveGame } from './components/games/DetectiveGame';
 import { ElectionSimGame } from './components/games/ElectionSimGame';
@@ -65,6 +64,7 @@ import {
   Landmark,
   Users,
   Wrench,
+  ExternalLink,
 } from 'lucide-react';
 
 export default function App() {
@@ -107,7 +107,7 @@ export default function App() {
   };
 
   // Game sub-tab state
-  const [activeGameTab, setActiveGameTab] = useState<'platformer' | 'speed' | 'detective' | 'pemilu' | 'puzzle'>('platformer');
+  const [activeGameTab, setActiveGameTab] = useState<'speed' | 'detective' | 'pemilu' | 'puzzle'>('speed');
 
   // User State & Role Switching
   const [students, setStudents] = useState<UserProfile[]>(getStoredStudents);
@@ -293,7 +293,6 @@ export default function App() {
   // Helper for hierarchical Breadcrumbs
   const currentNavItem = navItems.find((n) => n.id === activeMenu) || navItems[0];
   const gameLabels: Record<typeof activeGameTab, string> = {
-    platformer: '1. Petualangan 2D',
     speed: '2. Kuis Kilat',
     detective: '3. Detektif Moral',
     pemilu: '4. Simulasi Pemilu',
@@ -1540,18 +1539,18 @@ export default function App() {
 
                 <div className="bg-sky-50 p-4 rounded-2xl border border-sky-100 flex items-center justify-between gap-4">
                   <div className="text-xs text-slate-600 font-medium">
-                    Tersedia kontrol keyboard PC & tombol sentuh virtual HP
+                    Mainkan langsung melalui portal Petualangan 2D SMANDE
                   </div>
-                  <button
-                    onClick={() => {
-                      setActiveMenu('game');
-                      setActiveGameTab('platformer');
-                      sound.playClick();
-                    }}
-                    className="px-4 py-2 bg-sky-600 hover:bg-sky-500 font-bold text-xs text-white rounded-xl shadow-md shrink-0 transition-all"
+                  <a
+                    href="https://permainan-mario-bross.munawarrois81.workers.dev/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => sound.playClick()}
+                    className="btn-3d btn-3d-emerald px-4 py-2 font-bold text-xs text-white rounded-xl shrink-0 inline-flex items-center gap-1.5 cursor-pointer"
                   >
-                    Mainkan Sekarang 🎮
-                  </button>
+                    <span>Mainkan Sekarang 🎮</span>
+                    <ExternalLink size={14} />
+                  </a>
                 </div>
               </div>
 
@@ -1904,8 +1903,18 @@ export default function App() {
 
               {/* Game Sub-tabs (3D Arcade Category Buttons) */}
               <div className="flex items-center gap-2 overflow-x-auto pb-2 pt-0.5 max-w-full">
+                <a
+                  href="https://permainan-mario-bross.munawarrois81.workers.dev/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => sound.playClick()}
+                  className="btn-3d btn-3d-amber px-3.5 py-2 rounded-xl text-xs font-black text-sky-950 whitespace-nowrap inline-flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span>1. Petualangan 2D</span>
+                  <ExternalLink size={13} />
+                </a>
+
                 {[
-                  { id: 'platformer', label: '1. Petualangan 2D' },
                   { id: 'speed', label: '2. Kuis Kilat' },
                   { id: 'detective', label: '3. Detektif Moral' },
                   { id: 'pemilu', label: '4. Simulasi Pemilu' },
@@ -1930,17 +1939,6 @@ export default function App() {
             </div>
 
             {/* Selected Game Rendering */}
-            {activeGameTab === 'platformer' && (
-              <PancasilaPlatformer
-                onCompleteScore={(pts) =>
-                  setCurrentUser((p) => ({
-                    ...p,
-                    points: p.points + pts,
-                    badges: Array.from(new Set([...p.badges, 'badge-nusantara'])),
-                  }))
-                }
-              />
-            )}
 
             {activeGameTab === 'speed' && (
               <SpeedQuizGame
