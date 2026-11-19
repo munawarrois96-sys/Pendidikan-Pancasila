@@ -187,3 +187,19 @@ export interface SchoolAnnouncement {
   content: string;
   author: string;
 }
+
+export type AttendanceStatus = 'HADIR' | 'IJIN' | 'ALPA';
+
+export interface StudentAttendanceRecord {
+  id: string;
+  studentName: string;
+  className: string; // X-1..X-10, XI-1..XI-10, XII-1..XII-10
+  grade: GradeLevel;
+  dayName: string;
+  dateStr: string;
+  timeStr: string;
+  lessonPeriod: string;
+  status: AttendanceStatus;
+  note: string;
+}
+

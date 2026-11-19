@@ -29,6 +29,7 @@ import { TkaSimulationView } from './components/TkaSimulationView';
 import { TeacherToolkitView } from './components/TeacherToolkitView';
 import { CpnsSimulationView } from './components/CpnsSimulationView';
 import { PppkSimulationView } from './components/PppkSimulationView';
+import { StudentAttendanceView } from './components/StudentAttendanceView';
 
 // Icons
 import {
@@ -65,6 +66,7 @@ import {
   Users,
   Wrench,
   ExternalLink,
+  ClipboardCheck,
 } from 'lucide-react';
 
 export default function App() {
@@ -223,6 +225,7 @@ export default function App() {
     { id: 'glosarium', label: 'Glosarium Pancasila', icon: BookMarked, category: 'Referensi', desc: 'Kamus istilah lengkap Pancasila, konstitusi, hukum & demokrasi' },
     { id: 'forum', label: 'Forum Diskusi', icon: MessageSquare, category: 'Komunitas', desc: 'Mimbar musyawarah & refleksi etika berbangsa' },
     { id: 'agenda', label: 'Agenda & Tugas', icon: Calendar, category: 'Sekolah', desc: 'Kalender asesmen & hari besar nasional' },
+    { id: 'absensiSiswa', label: 'Absensi Siswa', icon: ClipboardCheck, category: 'Manajemen', desc: 'Isi manual Nama, Kelas X-1 s.d. XII-10, hari, jam detail & kehadiran HADIR/IJIN/ALPA' },
     { id: 'toolGuru', label: 'TOOL Guru (10 Alat)', icon: Wrench, category: 'Manajemen', desc: '10 Alat bantu mengajar: timer, acak nama, kelompok, scan, LJK, jadwal' },
     { id: 'dashboardGuru', label: 'Dashboard Guru', icon: UserCheck, category: 'Manajemen', desc: 'Panel guru, bank soal & rekap ekspor nilai' },
     { id: 'tentang', label: 'Tentang Web', icon: Info, category: 'Informasi', desc: 'Profil SMA Negeri 1 Mande & tim pengampu' },
@@ -263,7 +266,7 @@ export default function App() {
       label: 'Guru & Profil',
       icon: Briefcase,
       iconColor: 'text-rose-600',
-      itemIds: ['toolGuru', 'dashboardGuru', 'kompetisi', 'forum', 'agenda', 'tentang'],
+      itemIds: ['absensiSiswa', 'toolGuru', 'dashboardGuru', 'kompetisi', 'forum', 'agenda', 'tentang'],
     },
   ];
 
@@ -1376,6 +1379,7 @@ export default function App() {
                   </div>
                   <div className="space-y-2.5">
                     {[
+                      { id: 'absensiSiswa', label: 'Absensi Siswa (X-1 s.d. XII-10) 📋', desc: 'Nama, kelas, hari, jam detail, HADIR/IJIN/ALPA', icon: ClipboardCheck },
                       { id: 'toolGuru', label: 'TOOL Guru (10 Alat Bantu) 🛠️', desc: 'Timer, acak nama, scan, LJK, jadwal', icon: Wrench },
                       { id: 'kompetisi', label: 'Kompetisi & Lencana', desc: 'Peringkat siswa & badge digital', icon: Award },
                       { id: 'forum', label: 'Forum Musyawarah Kelas', desc: 'Diskusi kasus & etika berbangsa', icon: MessageSquare },
@@ -2230,6 +2234,11 @@ export default function App() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* ================= ABSENSI SISWA (X-1 S.D. XII-10) ================= */}
+        {activeMenu === 'absensiSiswa' && (
+          <StudentAttendanceView />
         )}
 
         {/* ================= TOOL GURU (10 ALAT BANTU MENGAJAR) ================= */}

@@ -1,4 +1,5 @@
 import express from 'express';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
@@ -14,6 +15,114 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use(express.static(path.resolve(__dirname, 'public')));
+
+// Shared attendance store (starts empty, populated manually by website visitors)
+const ATTENDANCE_FILE = '/tmp/smande_attendance_v2.json';
+
+interface AttendanceRecordPayload {
+  id: string;
+  studentName: string;
+  className: string;
+  grade: 'X' | 'XI' | 'XII';
+  dayName: string;
+  dateStr: string;
+  timeStr: string;
+  lessonPeriod: string;
+  status: 'HADIR' | 'IJIN' | 'ALPA';
+  note: string;
+}
+
+function loadServerAttendance(): AttendanceRecordPayload[] {
+  try {
+    if (fs.existsSync(ATTENDANCE_FILE)) {
+      const raw = fs.readFileSync(ATTENDANCE_FILE, 'utf-8');
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (err) {
+    console.error('Error reading attendance file:', err);
+  }
+  return [];
+}
+
+function saveServerAttendance(records: AttendanceRecordPayload[]): void {
+  try {
+    fs.writeFileSync(ATTENDANCE_FILE, JSON.stringify(records, null, 2), 'utf-8');
+  } catch (err) {
+    console.error('Error writing attendance file:', err);
+  }
+}
+
+let attendanceRecordsStore: AttendanceRecordPayload[] = loadServerAttendance();
+
+app.get('/api/attendance', (_req, res) => {
+  res.json({ records: attendanceRecordsStore });
+});
+
+app.post('/api/attendance', (req, res) => {
+  const body = req.body as Partial<AttendanceRecordPayload>;
+  const studentName = typeof body.studentName === 'string' ? body.studentName.trim() : '';
+  const className = typeof body.className === 'string' ? body.className.trim() : '';
+  const status = body.status;
+
+  if (!studentName || !className || (status !== 'HADIR' && status !== 'IJIN' && status !== 'ALPA')) {
+    return res.status(400).json({ error: 'Nama, Kelas, dan Status Kehadiran wajib diisi.' });
+  }
+
+  const gradeRaw = className.split('-')[0];
+  const grade: 'X' | 'XI' | 'XII' = gradeRaw === 'XII' ? 'XII' : gradeRaw === 'XI' ? 'XI' : 'X';
+
+  const newRecord: AttendanceRecordPayload = {
+    id: typeof body.id === 'string' && body.id ? body.id : `att-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    studentName,
+    className,
+    grade,
+    dayName: typeof body.dayName === 'string' && body.dayName ? body.dayName : 'Senin',
+    dateStr: typeof body.dateStr === 'string' && body.dateStr ? body.dateStr : '',
+    timeStr: typeof body.timeStr === 'string' && body.timeStr ? body.timeStr : '',
+    lessonPeriod: typeof body.lessonPeriod === 'string' && body.lessonPeriod ? body.lessonPeriod : '',
+    status,
+    note: typeof body.note === 'string' ? body.note.trim() : '',
+  };
+
+  attendanceRecordsStore = [newRecord, ...attendanceRecordsStore];
+  saveServerAttendance(attendanceRecordsStore);
+  return res.status(201).json({ record: newRecord, records: attendanceRecordsStore });
+});
+
+app.patch('/api/attendance/:id', (req, res) => {
+  const { id } = req.params;
+  const { status, timeStr, note } = req.body as Partial<AttendanceRecordPayload>;
+  if (status !== 'HADIR' && status !== 'IJIN' && status !== 'ALPA') {
+    return res.status(400).json({ error: 'Status kehadiran tidak valid.' });
+  }
+
+  attendanceRecordsStore = attendanceRecordsStore.map((rec) =>
+    rec.id === id
+      ? {
+          ...rec,
+          status,
+          timeStr: typeof timeStr === 'string' ? timeStr : rec.timeStr,
+          note: typeof note === 'string' ? note : rec.note,
+        }
+      : rec
+  );
+  saveServerAttendance(attendanceRecordsStore);
+  return res.json({ records: attendanceRecordsStore });
+});
+
+app.delete('/api/attendance/:id', (req, res) => {
+  const { id } = req.params;
+  attendanceRecordsStore = attendanceRecordsStore.filter((rec) => rec.id !== id);
+  saveServerAttendance(attendanceRecordsStore);
+  return res.json({ records: attendanceRecordsStore });
+});
+
+app.delete('/api/attendance', (_req, res) => {
+  attendanceRecordsStore = [];
+  saveServerAttendance(attendanceRecordsStore);
+  return res.json({ records: attendanceRecordsStore });
+});
 
 // Initialize Gemini SDK if API key is present
 const geminiApiKey = process.env.GEMINI_API_KEY;
