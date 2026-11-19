@@ -87,8 +87,8 @@ service cloud.firestore {
 
     // ==================== COLLECTION RULES ====================
 
-    // Attendance records: visible & fillable manually by website visitors;
-    // updates & deletions protected for verified admin/teacher only.
+    // Attendance records: visible, fillable, updatable & deletable via Absensi menu
+    // with strict schema validation and path ID hardening.
     match /attendance/{recordId} {
       allow get: if isValidId(recordId);
       allow list: if true;
@@ -96,11 +96,10 @@ service cloud.firestore {
         && isValidAttendanceRecord(incoming())
         && incoming().createdAt == request.time;
       allow update: if isValidId(recordId)
-        && isAdmin()
         && isValidAttendanceRecord(incoming())
         && incoming().createdAt == existing().createdAt
         && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'timeStr', 'note', 'lessonPeriod']);
-      allow delete: if isValidId(recordId) && isAdmin();
+      allow delete: if isValidId(recordId);
     }
 
     // Private user profiles (PII protected)

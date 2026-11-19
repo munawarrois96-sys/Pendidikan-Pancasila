@@ -108,22 +108,25 @@ function getStatusBadgeConfig(status: AttendanceStatus) {
     case 'HADIR':
       return {
         label: 'HADIR',
-        bg: 'bg-emerald-50 text-emerald-800 border-emerald-200',
-        selectBg: 'bg-emerald-50 text-emerald-800 border-emerald-300',
+        bg: 'bg-emerald-100 text-emerald-900 border-emerald-300',
+        selectBg: 'bg-emerald-100 text-emerald-900 border-emerald-300',
+        rowBg: 'bg-emerald-50/85 hover:bg-emerald-100/75',
         Icon: CheckCircle2,
       };
     case 'IJIN':
       return {
         label: 'IJIN',
-        bg: 'bg-amber-50 text-amber-800 border-amber-200',
-        selectBg: 'bg-amber-50 text-amber-800 border-amber-300',
+        bg: 'bg-amber-100 text-amber-900 border-amber-300',
+        selectBg: 'bg-amber-100 text-amber-900 border-amber-300',
+        rowBg: 'bg-amber-50/85 hover:bg-amber-100/75',
         Icon: FileText,
       };
     case 'ALPA':
       return {
         label: 'ALPA',
-        bg: 'bg-rose-50 text-rose-800 border-rose-200',
-        selectBg: 'bg-rose-50 text-rose-800 border-rose-300',
+        bg: 'bg-rose-100 text-rose-900 border-rose-300',
+        selectBg: 'bg-rose-100 text-rose-900 border-rose-300',
+        rowBg: 'bg-rose-50/85 hover:bg-rose-100/75',
         Icon: XCircle,
       };
   }
@@ -175,7 +178,10 @@ export const StudentAttendanceView: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [confirmClearAll, setConfirmClearAll] = useState(false);
+  const [confirmDeleteRowId, setConfirmDeleteRowId] = useState<string | null>(null);
+  const [isDeleteMenuOpen, setIsDeleteMenuOpen] = useState(false);
+  const [confirmDeleteScope, setConfirmDeleteScope] = useState<'filtered' | 'all' | null>(null);
+  const [isDeletingBulk, setIsDeletingBulk] = useState(false);
 
   const isTeacherAdmin = Boolean(
     authUser && authUser.emailVerified && authUser.email === ADMIN_EMAIL
@@ -490,7 +496,6 @@ export const StudentAttendanceView: React.FC = () => {
   };
 
   const handleStatusChange = async (rec: StudentAttendanceRecord, nextStatus: AttendanceStatus) => {
-    if (!isTeacherAdmin) return;
     sound.playClick();
     const nowTime = getCurrentIndonesianDateTime().timeStr;
     const defaultNoteByStatus = (
@@ -529,8 +534,8 @@ export const StudentAttendanceView: React.FC = () => {
   };
 
   const handleDeleteRecord = async (id: string, name: string) => {
-    if (!isTeacherAdmin) return;
     sound.playClick();
+    setConfirmDeleteRowId(null);
     const recordPath = `attendance/${id}`;
     try {
       await rtdbRemove(rtdbRef(rtdb, recordPath));
@@ -539,15 +544,50 @@ export const StudentAttendanceView: React.FC = () => {
     }
     try {
       await deleteDoc(doc(db, 'attendance', id));
-      showNotice(`Data absensi "${name}" telah dihapus.`);
+      setRtdbRecords((prev) => prev.filter((r) => r.id !== id));
+      setFirestoreRecords((prev) => prev.filter((r) => r.id !== id));
+      showNotice(`Data absensi "${name}" telah dihapus dari Firebase.`);
     } catch (err) {
       handleFirestoreError(err, OperationType.DELETE, recordPath);
     }
   };
 
-  const handleClearAll = async () => {
-    if (!isTeacherAdmin || records.length === 0) return;
+  const handleDeleteFiltered = async () => {
+    if (filteredRecords.length === 0) return;
     sound.playClick();
+    setIsDeletingBulk(true);
+    const idsToDelete = new Set(filteredRecords.map((r) => r.id));
+
+    for (const rec of filteredRecords) {
+      try {
+        await rtdbRemove(rtdbRef(rtdb, `attendance/${rec.id}`));
+      } catch {
+        // Continue deleting in Firestore
+      }
+    }
+
+    try {
+      const batch = writeBatch(db);
+      filteredRecords.forEach((rec) => {
+        batch.delete(doc(db, 'attendance', rec.id));
+      });
+      await batch.commit();
+      setRtdbRecords((prev) => prev.filter((r) => !idsToDelete.has(r.id)));
+      setFirestoreRecords((prev) => prev.filter((r) => !idsToDelete.has(r.id)));
+      setConfirmDeleteScope(null);
+      setIsDeleteMenuOpen(false);
+      showNotice(`${filteredRecords.length} data absensi terfilter berhasil dihapus dari Firebase.`);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, 'attendance');
+    } finally {
+      setIsDeletingBulk(false);
+    }
+  };
+
+  const handleClearAll = async () => {
+    if (records.length === 0) return;
+    sound.playClick();
+    setIsDeletingBulk(true);
     try {
       await rtdbRemove(rtdbRef(rtdb, 'attendance'));
     } catch {
@@ -559,14 +599,19 @@ export const StudentAttendanceView: React.FC = () => {
         batch.delete(doc(db, 'attendance', rec.id));
       });
       await batch.commit();
-      setConfirmClearAll(false);
+      setRtdbRecords([]);
+      setFirestoreRecords([]);
+      setConfirmDeleteScope(null);
+      setIsDeleteMenuOpen(false);
       setSelectedClass('ALL');
       setSelectedStatus('ALL');
       setSelectedIsoDate('');
       setSearchQuery('');
-      showNotice('Seluruh daftar absensi telah dikosongkan.');
+      showNotice('Seluruh data absensi telah dihapus dari Firebase.');
     } catch (err) {
       handleFirestoreError(err, OperationType.DELETE, 'attendance');
+    } finally {
+      setIsDeletingBulk(false);
     }
   };
 
@@ -937,16 +982,16 @@ export const StudentAttendanceView: React.FC = () => {
           </div>
         </div>
 
-        {/* Summary Counters Strip matching Screenshot */}
+        {/* Summary Counters & Color Legend Strip */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2 text-xs font-black tabular-nums">
-            <span className="px-3 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800">
+            <span className="px-3 py-1 rounded-lg bg-emerald-100 border border-emerald-300 text-emerald-900">
               HADIR: {stats.hadir}
             </span>
-            <span className="px-3 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800">
+            <span className="px-3 py-1 rounded-lg bg-amber-100 border border-amber-300 text-amber-900">
               IJIN: {stats.ijin}
             </span>
-            <span className="px-3 py-1 rounded-lg bg-rose-50 border border-rose-200 text-rose-800">
+            <span className="px-3 py-1 rounded-lg bg-rose-100 border border-rose-300 text-rose-900">
               ALPA: {stats.alpa}
             </span>
             <span className="px-3 py-1 rounded-lg bg-sky-100 border border-sky-200 text-[#0a5ea8]">
@@ -958,6 +1003,21 @@ export const StudentAttendanceView: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-3 text-xs">
+            <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-600">
+              <span className="inline-flex items-center gap-1">
+                <span className="w-3 h-3 rounded bg-emerald-200 border border-emerald-400 inline-block" />
+                Hadir
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <span className="w-3 h-3 rounded bg-amber-200 border border-amber-400 inline-block" />
+                Ijin (Tidak Hadir)
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <span className="w-3 h-3 rounded bg-rose-200 border border-rose-400 inline-block" />
+                Alpa (Tidak Hadir)
+              </span>
+            </div>
+
             <div className="flex items-center gap-1.5">
               <span className="text-slate-500 font-semibold">Urutan:</span>
               <select
@@ -1000,20 +1060,20 @@ export const StudentAttendanceView: React.FC = () => {
                 <th className="py-3 px-3.5 min-w-[90px] whitespace-nowrap">Hari</th>
                 <th className="py-3 px-3.5 min-w-[115px] whitespace-nowrap">Tanggal</th>
                 <th className="py-3 px-3.5 min-w-[130px] whitespace-nowrap">Jam</th>
-                <th className="py-3 px-3.5 min-w-[145px] whitespace-nowrap">Status</th>
-                {isTeacherAdmin && <th className="py-3 px-3.5 w-16 text-center whitespace-nowrap">Hapus</th>}
+                <th className="py-3 px-3.5 min-w-[175px] whitespace-nowrap">Status</th>
+                <th className="py-3 px-3.5 min-w-[100px] text-center whitespace-nowrap">Hapus</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 text-xs">
               {isLoading ? (
                 <tr>
-                  <td colSpan={isTeacherAdmin ? 9 : 8} className="py-6 px-4 text-slate-500 font-medium">
+                  <td colSpan={9} className="py-6 px-4 text-slate-500 font-medium">
                     Memuat data absensi...
                   </td>
                 </tr>
               ) : paginatedRecords.length === 0 ? (
                 <tr>
-                  <td colSpan={isTeacherAdmin ? 9 : 8} className="py-5 px-4 text-slate-600">
+                  <td colSpan={9} className="py-5 px-4 text-slate-600">
                     Belum ada data absensi pada pilihan ini.
                   </td>
                 </tr>
@@ -1024,30 +1084,30 @@ export const StudentAttendanceView: React.FC = () => {
                   const StatusIcon = badge.Icon;
 
                   return (
-                    <tr key={rec.id} className="hover:bg-sky-50/40 transition-colors">
-                      <td className="py-3 px-3.5 font-mono tabular-nums text-slate-600 font-semibold whitespace-nowrap">
+                    <tr key={rec.id} className={`${badge.rowBg} transition-colors`}>
+                      <td className="py-3 px-3.5 font-mono tabular-nums text-slate-700 font-semibold whitespace-nowrap">
                         {rowNum}
                       </td>
                       <td className="py-3 px-3.5">
                         <div className="font-bold text-slate-900">{rec.studentName}</div>
                         {rec.note && (
-                          <div className="text-[11px] text-slate-500 mt-0.5">{rec.note}</div>
+                          <div className="text-[11px] text-slate-600 mt-0.5">{rec.note}</div>
                         )}
                       </td>
                       <td className="py-3 px-3.5 font-bold text-[#0a5ea8] tabular-nums whitespace-nowrap">
                         {rec.className}
                       </td>
-                      <td className="py-3 px-3.5 font-medium text-slate-700 uppercase whitespace-nowrap">
+                      <td className="py-3 px-3.5 font-medium text-slate-800 uppercase whitespace-nowrap">
                         {rec.lessonPeriod || 'PENDIDIKAN PANCASILA'}
                       </td>
                       <td className="py-3 px-3.5 font-semibold text-slate-800 whitespace-nowrap">{rec.dayName}</td>
-                      <td className="py-3 px-3.5 font-mono tabular-nums text-slate-700 whitespace-nowrap">
+                      <td className="py-3 px-3.5 font-mono tabular-nums text-slate-800 whitespace-nowrap">
                         {rec.dateStr}
                       </td>
-                      <td className="py-3 px-3.5 font-mono tabular-nums font-semibold text-slate-800 whitespace-nowrap">
+                      <td className="py-3 px-3.5 font-mono tabular-nums font-semibold text-slate-900 whitespace-nowrap">
                         {rec.timeStr}
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-3.5 whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           <span
                             className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[11px] font-black shrink-0 ${badge.bg}`}
@@ -1055,34 +1115,50 @@ export const StudentAttendanceView: React.FC = () => {
                             <StatusIcon size={12} />
                             <span>{badge.label}</span>
                           </span>
-                          {isTeacherAdmin && (
-                            <select
-                              aria-label={`Ubah status ${rec.studentName}`}
-                              value={rec.status}
-                              onChange={(e) =>
-                                handleStatusChange(rec, e.target.value as AttendanceStatus)
-                              }
-                              className={`px-2 py-1 rounded-lg border text-[11px] font-bold cursor-pointer focus:outline-none focus:ring-2 focus:ring-sky-400 ${badge.selectBg}`}
-                            >
-                              <option value="HADIR">HADIR</option>
-                              <option value="IJIN">IJIN</option>
-                              <option value="ALPA">ALPA</option>
-                            </select>
-                          )}
+                          <select
+                            aria-label={`Ubah status ${rec.studentName}`}
+                            value={rec.status}
+                            onChange={(e) =>
+                              handleStatusChange(rec, e.target.value as AttendanceStatus)
+                            }
+                            className={`px-2 py-1 rounded-lg border text-[11px] font-bold cursor-pointer focus:outline-none focus:ring-2 focus:ring-sky-400 ${badge.selectBg}`}
+                          >
+                            <option value="HADIR">HADIR</option>
+                            <option value="IJIN">IJIN</option>
+                            <option value="ALPA">ALPA</option>
+                          </select>
                         </div>
                       </td>
-                      {isTeacherAdmin && (
-                        <td className="py-3 px-4 text-center">
+                      <td className="py-3 px-3.5 text-center whitespace-nowrap">
+                        {confirmDeleteRowId === rec.id ? (
+                          <div className="inline-flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteRecord(rec.id, rec.studentName)}
+                              className="px-2 py-1 rounded-md bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-bold cursor-pointer"
+                            >
+                              Ya
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setConfirmDeleteRowId(null)}
+                              className="px-2 py-1 rounded-md bg-white border border-slate-300 text-slate-700 text-[11px] font-bold cursor-pointer"
+                            >
+                              Batal
+                            </button>
+                          </div>
+                        ) : (
                           <button
                             type="button"
-                            onClick={() => handleDeleteRecord(rec.id, rec.studentName)}
+                            onClick={() => setConfirmDeleteRowId(rec.id)}
                             title={`Hapus data ${rec.studentName}`}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-rose-200 bg-white text-rose-700 hover:bg-rose-600 hover:text-white transition-colors text-[11px] font-bold cursor-pointer"
                           >
-                            <Trash2 size={14} />
+                            <Trash2 size={13} />
+                            <span>Hapus</span>
                           </button>
-                        </td>
-                      )}
+                        )}
+                      </td>
                     </tr>
                   );
                 })
@@ -1120,7 +1196,7 @@ export const StudentAttendanceView: React.FC = () => {
           </div>
         )}
 
-        {/* Bottom Action Buttons Bar (matching Screenshot: Unduh Word .docx, Unduh CSV, Segarkan data) */}
+        {/* Bottom Action Buttons Bar + Hapus Data Menu */}
         <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
           <div className="flex flex-wrap items-center gap-2.5">
             <button
@@ -1154,38 +1230,81 @@ export const StudentAttendanceView: React.FC = () => {
             </button>
           </div>
 
-          {isTeacherAdmin && records.length > 0 && (
-            <div>
-              {!confirmClearAll ? (
+          {/* Menu / Tombol Hapus Data Terintegrasi Firebase */}
+          <div className="relative">
+            {confirmDeleteScope ? (
+              <div className="flex flex-wrap items-center gap-2 bg-rose-50 border border-rose-300 rounded-xl px-3 py-2">
+                <span className="text-xs font-bold text-rose-900">
+                  {confirmDeleteScope === 'filtered'
+                    ? `Hapus ${filteredRecords.length} data terfilter dari Firebase?`
+                    : `Hapus semua (${records.length}) data dari Firebase?`}
+                </span>
                 <button
                   type="button"
-                  onClick={() => setConfirmClearAll(true)}
-                  className="btn-3d btn-3d-white px-3.5 py-2 rounded-xl text-xs font-bold text-rose-700 flex items-center gap-1.5 cursor-pointer"
+                  disabled={isDeletingBulk}
+                  onClick={
+                    confirmDeleteScope === 'filtered' ? handleDeleteFiltered : handleClearAll
+                  }
+                  className="btn-3d btn-3d-rose px-3 py-1 rounded-lg text-xs font-bold cursor-pointer disabled:opacity-60"
                 >
-                  <Trash2 size={14} />
-                  <span>Kosongkan Daftar</span>
+                  {isDeletingBulk ? 'Menghapus...' : 'Ya, Hapus'}
                 </button>
-              ) : (
-                <div className="flex items-center gap-1.5 bg-rose-50 border border-rose-200 rounded-xl px-2.5 py-1">
-                  <span className="text-[11px] font-bold text-rose-800">Hapus semua?</span>
-                  <button
-                    type="button"
-                    onClick={handleClearAll}
-                    className="btn-3d btn-3d-rose px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer"
-                  >
-                    Ya, Hapus
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setConfirmClearAll(false)}
-                    className="btn-3d btn-3d-white px-2.5 py-1 rounded-lg text-[11px] font-bold text-slate-700 cursor-pointer"
-                  >
-                    Batal
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
+                <button
+                  type="button"
+                  disabled={isDeletingBulk}
+                  onClick={() => setConfirmDeleteScope(null)}
+                  className="btn-3d btn-3d-white px-3 py-1 rounded-lg text-xs font-bold text-slate-700 cursor-pointer"
+                >
+                  Batal
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={records.length === 0}
+                  onClick={() => setIsDeleteMenuOpen((prev) => !prev)}
+                  className="btn-3d btn-3d-rose px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  <Trash2 size={15} />
+                  <span>Hapus Data</span>
+                </button>
+
+                {isDeleteMenuOpen && records.length > 0 && (
+                  <div className="absolute right-0 bottom-12 z-20 w-64 bg-white border border-rose-200 rounded-xl shadow-lg p-2 space-y-1">
+                    {filteredRecords.length > 0 && filteredRecords.length < records.length && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setConfirmDeleteScope('filtered');
+                          setIsDeleteMenuOpen(false);
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-lg text-xs font-bold text-rose-700 hover:bg-rose-50 flex items-center justify-between cursor-pointer"
+                      >
+                        <span>Hapus Data Terfilter</span>
+                        <span className="tabular-nums bg-rose-100 px-1.5 py-0.5 rounded text-[11px]">
+                          {filteredRecords.length}
+                        </span>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setConfirmDeleteScope('all');
+                        setIsDeleteMenuOpen(false);
+                      }}
+                      className="w-full text-left px-3 py-2 rounded-lg text-xs font-bold text-rose-700 hover:bg-rose-50 flex items-center justify-between cursor-pointer"
+                    >
+                      <span>Hapus Semua Data</span>
+                      <span className="tabular-nums bg-rose-100 px-1.5 py-0.5 rounded text-[11px]">
+                        {records.length}
+                      </span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -253,7 +253,8 @@ export async function exportAttendanceToWord({
           }),
         ]
       : sortedRecords.map((rec, idx) => {
-          const rowFill = idx % 2 === 1 ? 'F8FAFC' : undefined;
+          const rowFill =
+            rec.status === 'HADIR' ? 'ECFDF5' : rec.status === 'IJIN' ? 'FFFBEB' : 'FFF1F2';
           const statusColor =
             rec.status === 'HADIR' ? '047857' : rec.status === 'IJIN' ? 'B45309' : 'BE123C';
           const subjectLabel = rec.lessonPeriod || 'PENDIDIKAN PANCASILA';
