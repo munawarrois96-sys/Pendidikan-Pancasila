@@ -6,24 +6,22 @@ import {
   FileText,
   XCircle,
   Clock,
-  Calendar,
   Download,
   Trash2,
-  Users,
-  Filter,
   ChevronLeft,
   ChevronRight,
-  UserPlus,
   RefreshCw,
   LogIn,
   LogOut,
   ShieldCheck,
+  FileDown,
 } from 'lucide-react';
 import {
   collection,
   deleteDoc,
   doc,
   getDoc,
+  getDocsFromServer,
   onSnapshot,
   orderBy,
   query,
@@ -33,6 +31,7 @@ import {
   writeBatch,
 } from 'firebase/firestore';
 import {
+  get as rtdbGet,
   onValue,
   ref as rtdbRef,
   remove as rtdbRemove,
@@ -44,15 +43,8 @@ import { onAuthStateChanged, signInWithPopup, signOut, User } from 'firebase/aut
 import { AttendanceStatus, GradeLevel, StudentAttendanceRecord } from '../types';
 import { CLASS_GROUPS, INDONESIAN_DAYS } from '../data/attendanceData';
 import { auth, db, googleAuthProvider, handleFirestoreError, OperationType, rtdb } from '../lib/firebase';
+import { exportAttendanceToWord } from '../utils/exportAttendanceWord';
 import { sound } from '../utils/audio';
-
-const LESSON_PERIOD_OPTIONS = [
-  'Jam ke-1 & 2 (07:00 - 08:30)',
-  'Jam ke-3 & 4 (08:30 - 10:00)',
-  'Jam ke-5 & 6 (10:15 - 11:45)',
-  'Jam ke-7 & 8 (12:30 - 14:00)',
-  'Jam ke-2 & 3 (07:45 - 09:15)',
-];
 
 const MONTHS_ID = [
   'Januari',
@@ -75,16 +67,35 @@ const ADMIN_EMAIL = 'munawarrois81@guru.sma.belajar.id';
 function getCurrentIndonesianDateTime() {
   const now = new Date();
   const dayName = DAYS_ID[now.getDay()];
-  const dateStr = `${now.getDate()} ${MONTHS_ID[now.getMonth()]} ${now.getFullYear()}`;
+  const dd = String(now.getDate()).padStart(2, '0');
+  const mmNum = String(now.getMonth() + 1).padStart(2, '0');
+  const yyyy = now.getFullYear();
+  const dateDisplay = `${dd}/${mmNum}/${yyyy}`;
+  const isoDate = `${yyyy}-${mmNum}-${dd}`;
+  const longDate = `${now.getDate()} ${MONTHS_ID[now.getMonth()]} ${yyyy}`;
   const hh = String(now.getHours()).padStart(2, '0');
-  const mm = String(now.getMinutes()).padStart(2, '0');
+  const min = String(now.getMinutes()).padStart(2, '0');
   const ss = String(now.getSeconds()).padStart(2, '0');
   return {
     dayName: dayName === 'Minggu' ? 'Senin' : dayName,
     liveDayName: dayName,
-    dateStr,
-    timeStr: `${hh}:${mm}:${ss} WIB`,
+    dateDisplay,
+    isoDate,
+    longDate,
+    timeStr: `${hh}:${min}:${ss} WIB`,
   };
+}
+
+/** Matches YYYY-MM-DD against DD/MM/YYYY or "D MMMM YYYY" */
+function matchesIsoDate(recordDateStr: string, isoDate: string): boolean {
+  if (!isoDate) return true;
+  const [y, m, d] = isoDate.split('-');
+  if (!y || !m || !d) return true;
+  const ddmmyyyy = `${d}/${m}/${y}`;
+  const monthName = MONTHS_ID[Number(m) - 1] || '';
+  const longForm = `${Number(d)} ${monthName} ${y}`.toLowerCase();
+  const norm = recordDateStr.trim().toLowerCase();
+  return norm === ddmmyyyy || norm === isoDate || norm === longForm;
 }
 
 function getStatusBadgeConfig(status: AttendanceStatus) {
@@ -119,6 +130,8 @@ export const StudentAttendanceView: React.FC = () => {
   const [rtdbRecords, setRtdbRecords] = useState<TimedAttendanceRecord[]>([]);
   const [firestoreRecords, setFirestoreRecords] = useState<TimedAttendanceRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isExportingWord, setIsExportingWord] = useState(false);
   const [liveClock, setLiveClock] = useState(getCurrentIndonesianDateTime);
   const [authUser, setAuthUser] = useState<User | null>(auth.currentUser);
   const [isAuthBusy, setIsAuthBusy] = useState(false);
@@ -132,22 +145,19 @@ export const StudentAttendanceView: React.FC = () => {
       .map(({ createdAtMs: _createdAtMs, ...rest }) => rest);
   }, [rtdbRecords, firestoreRecords]);
 
-  // Manual Visitor Entry Form State (always visible)
+  // Manual Visitor Entry Form State (clean 5-field top bar matching screenshot)
   const [newName, setNewName] = useState('');
   const [newClass, setNewClass] = useState('');
   const [newStatus, setNewStatus] = useState<'' | AttendanceStatus>('');
-  const [newDay, setNewDay] = useState<string>(() => getCurrentIndonesianDateTime().dayName);
-  const [newDateStr, setNewDateStr] = useState<string>(() => getCurrentIndonesianDateTime().dateStr);
-  const [newTimeStr, setNewTimeStr] = useState<string>(() => getCurrentIndonesianDateTime().timeStr);
-  const [newPeriod, setNewPeriod] = useState<string>(LESSON_PERIOD_OPTIONS[0]);
+  const [newSubject, setNewSubject] = useState('PENDIDIKAN PANCASILA');
   const [newNote, setNewNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Filters
+  const [selectedIsoDate, setSelectedIsoDate] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedClass, setSelectedClass] = useState<string>('ALL');
   const [selectedStatus, setSelectedStatus] = useState<'ALL' | AttendanceStatus>('ALL');
-  const [selectedDay, setSelectedDay] = useState<string>('ALL');
 
   // Pagination & UI State
   const [rowsPerPage, setRowsPerPage] = useState<number>(30);
@@ -213,7 +223,7 @@ export const StudentAttendanceView: React.FC = () => {
           dayName: String(data.dayName || 'Senin'),
           dateStr: String(data.dateStr || ''),
           timeStr: String(data.timeStr || ''),
-          lessonPeriod: String(data.lessonPeriod || ''),
+          lessonPeriod: String(data.lessonPeriod || 'PENDIDIKAN PANCASILA'),
           status: (data.status === 'IJIN' || data.status === 'ALPA' ? data.status : 'HADIR') as AttendanceStatus,
           note: String(data.note || ''),
           createdAtMs: typeof data.createdAt === 'number' ? data.createdAt : 0,
@@ -222,7 +232,6 @@ export const StudentAttendanceView: React.FC = () => {
         setIsLoading(false);
       },
       () => {
-        // If RTDB rules restrict direct access, Firestore listener keeps data active
         setIsLoading(false);
       }
     );
@@ -242,7 +251,7 @@ export const StudentAttendanceView: React.FC = () => {
             dayName: String(data.dayName || 'Senin'),
             dateStr: String(data.dateStr || ''),
             timeStr: String(data.timeStr || ''),
-            lessonPeriod: String(data.lessonPeriod || ''),
+            lessonPeriod: String(data.lessonPeriod || 'PENDIDIKAN PANCASILA'),
             status: (data.status === 'IJIN' || data.status === 'ALPA' ? data.status : 'HADIR') as AttendanceStatus,
             note: String(data.note || ''),
             createdAtMs: ts && typeof ts.toMillis === 'function' ? ts.toMillis() : Date.now(),
@@ -268,30 +277,31 @@ export const StudentAttendanceView: React.FC = () => {
     return records.filter((rec) => {
       const matchClass = selectedClass === 'ALL' || rec.className === selectedClass;
       const matchStatus = selectedStatus === 'ALL' || rec.status === selectedStatus;
-      const matchDay = selectedDay === 'ALL' || rec.dayName === selectedDay;
+      const matchDate = matchesIsoDate(rec.dateStr, selectedIsoDate);
       const matchSearch =
         !q ||
         rec.studentName.toLowerCase().includes(q) ||
         rec.className.toLowerCase().includes(q) ||
         rec.dayName.toLowerCase().includes(q) ||
         rec.dateStr.toLowerCase().includes(q) ||
+        rec.lessonPeriod.toLowerCase().includes(q) ||
         rec.note.toLowerCase().includes(q) ||
         rec.status.toLowerCase().includes(q);
-      return matchClass && matchStatus && matchDay && matchSearch;
+      return matchClass && matchStatus && matchDate && matchSearch;
     });
-  }, [records, selectedClass, selectedStatus, selectedDay, searchQuery]);
+  }, [records, selectedClass, selectedStatus, selectedIsoDate, searchQuery]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedClass, selectedStatus, selectedDay, searchQuery, rowsPerPage]);
+  }, [selectedClass, selectedStatus, selectedIsoDate, searchQuery, rowsPerPage]);
 
   const stats = useMemo(() => {
     const total = filteredRecords.length;
     const hadir = filteredRecords.filter((r) => r.status === 'HADIR').length;
     const ijin = filteredRecords.filter((r) => r.status === 'IJIN').length;
     const alpa = filteredRecords.filter((r) => r.status === 'ALPA').length;
-    const hadirPct = total > 0 ? Math.round((hadir / total) * 100) : 0;
-    return { total, hadir, ijin, alpa, hadirPct };
+    const distinctClasses = new Set(filteredRecords.map((r) => r.className).filter(Boolean)).size;
+    return { total, hadir, ijin, alpa, distinctClasses };
   }, [filteredRecords]);
 
   const totalPages = rowsPerPage === 0 ? 1 : Math.max(1, Math.ceil(filteredRecords.length / rowsPerPage));
@@ -328,12 +338,59 @@ export const StudentAttendanceView: React.FC = () => {
     showNotice('Berhasil keluar dari akun guru.');
   };
 
-  const handleFillNowTime = () => {
+  const handleRefreshData = async () => {
     sound.playClick();
-    const now = getCurrentIndonesianDateTime();
-    setNewDay(now.dayName);
-    setNewDateStr(now.dateStr);
-    setNewTimeStr(now.timeStr);
+    setIsRefreshing(true);
+    try {
+      try {
+        const snap = await rtdbGet(rtdbRef(rtdb, 'attendance'));
+        const val = snap.val() as Record<string, Record<string, unknown>> | null;
+        if (val && typeof val === 'object') {
+          const loaded: TimedAttendanceRecord[] = Object.entries(val).map(([key, data]) => ({
+            id: key,
+            studentName: String(data.studentName || ''),
+            className: String(data.className || ''),
+            grade: (data.grade === 'XII' || data.grade === 'XI' ? data.grade : 'X') as GradeLevel,
+            dayName: String(data.dayName || 'Senin'),
+            dateStr: String(data.dateStr || ''),
+            timeStr: String(data.timeStr || ''),
+            lessonPeriod: String(data.lessonPeriod || 'PENDIDIKAN PANCASILA'),
+            status: (data.status === 'IJIN' || data.status === 'ALPA' ? data.status : 'HADIR') as AttendanceStatus,
+            note: String(data.note || ''),
+            createdAtMs: typeof data.createdAt === 'number' ? data.createdAt : 0,
+          }));
+          setRtdbRecords(loaded);
+        }
+      } catch {
+        // Fallback to Firestore refresh below
+      }
+
+      const q = query(collection(db, 'attendance'), orderBy('createdAt', 'desc'));
+      const snapFs = await getDocsFromServer(q);
+      const loadedFs: TimedAttendanceRecord[] = snapFs.docs.map((docSnap) => {
+        const data = docSnap.data();
+        const ts = data.createdAt as { toMillis?: () => number } | undefined;
+        return {
+          id: docSnap.id,
+          studentName: String(data.studentName || ''),
+          className: String(data.className || ''),
+          grade: (data.grade === 'XII' || data.grade === 'XI' ? data.grade : 'X') as GradeLevel,
+          dayName: String(data.dayName || 'Senin'),
+          dateStr: String(data.dateStr || ''),
+          timeStr: String(data.timeStr || ''),
+          lessonPeriod: String(data.lessonPeriod || 'PENDIDIKAN PANCASILA'),
+          status: (data.status === 'IJIN' || data.status === 'ALPA' ? data.status : 'HADIR') as AttendanceStatus,
+          note: String(data.note || ''),
+          createdAtMs: ts && typeof ts.toMillis === 'function' ? ts.toMillis() : Date.now(),
+        };
+      });
+      setFirestoreRecords(loadedFs);
+      showNotice('Data absensi berhasil disegarkan.');
+    } catch {
+      showNotice('Data absensi sudah tersinkronisasi.');
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   const handleAddRecord = async (e: React.FormEvent) => {
@@ -348,7 +405,7 @@ export const StudentAttendanceView: React.FC = () => {
       return;
     }
     if (!newStatus) {
-      setErrorMsg('Silakan pilih Status Kehadiran (HADIR, IJIN, atau ALPA).');
+      setErrorMsg('Silakan pilih Kehadiran (HADIR, IJIN, atau ALPA).');
       return;
     }
 
@@ -359,14 +416,14 @@ export const StudentAttendanceView: React.FC = () => {
     const now = getCurrentIndonesianDateTime();
     const gradePrefix = newClass.split('-')[0];
     const grade: GradeLevel = gradePrefix === 'XII' ? 'XII' : gradePrefix === 'XI' ? 'XI' : 'X';
-    const safeDayName = INDONESIAN_DAYS.includes(newDay as (typeof INDONESIAN_DAYS)[number])
-      ? newDay
-      : now.dayName;
-    const resolvedDateStr = (newDateStr.trim() || now.dateStr).slice(0, 60);
+    const safeDayName = INDONESIAN_DAYS.includes(now.dayName as (typeof INDONESIAN_DAYS)[number])
+      ? now.dayName
+      : 'Senin';
+    const resolvedDateStr = now.dateDisplay.slice(0, 60);
     const resolvedTimeStr = (
-      newStatus === 'ALPA' ? '— (Tanpa Keterangan)' : newTimeStr.trim() || now.timeStr
+      newStatus === 'ALPA' ? '— (Tanpa Keterangan)' : now.timeStr
     ).slice(0, 60);
-    const resolvedPeriod = newPeriod.slice(0, 100);
+    const resolvedSubject = (newSubject.trim() || 'PENDIDIKAN PANCASILA').slice(0, 100);
     const resolvedNote = (
       newNote.trim() ||
       (newStatus === 'HADIR'
@@ -379,7 +436,6 @@ export const StudentAttendanceView: React.FC = () => {
     const recordId = `att-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const recordPath = `attendance/${recordId}`;
 
-    // Attempt direct Realtime Database write
     try {
       await rtdbSet(rtdbRef(rtdb, recordPath), {
         studentName: trimmedName,
@@ -388,13 +444,13 @@ export const StudentAttendanceView: React.FC = () => {
         dayName: safeDayName,
         dateStr: resolvedDateStr,
         timeStr: resolvedTimeStr,
-        lessonPeriod: resolvedPeriod,
+        lessonPeriod: resolvedSubject,
         status: newStatus,
         note: resolvedNote,
         createdAt: rtdbServerTimestamp(),
       });
     } catch {
-      // Continue to Firestore persistence if RTDB rules restrict unauthenticated writes
+      // Fallback to Firestore if RTDB rules restrict unauthenticated writes
     }
 
     try {
@@ -405,7 +461,7 @@ export const StudentAttendanceView: React.FC = () => {
         dayName: safeDayName,
         dateStr: resolvedDateStr,
         timeStr: resolvedTimeStr,
-        lessonPeriod: resolvedPeriod,
+        lessonPeriod: resolvedSubject,
         status: newStatus,
         note: resolvedNote,
         createdAt: serverTimestamp(),
@@ -420,9 +476,6 @@ export const StudentAttendanceView: React.FC = () => {
     setNewClass('');
     setNewStatus('');
     setNewNote('');
-    setNewDay(now.dayName);
-    setNewDateStr(now.dateStr);
-    setNewTimeStr(now.timeStr);
 
     showNotice(`Absensi "${trimmedName}" (${newClass}) — ${newStatus} berhasil disimpan.`);
   };
@@ -504,11 +557,46 @@ export const StudentAttendanceView: React.FC = () => {
       setConfirmClearAll(false);
       setSelectedClass('ALL');
       setSelectedStatus('ALL');
-      setSelectedDay('ALL');
+      setSelectedIsoDate('');
       setSearchQuery('');
       showNotice('Seluruh daftar absensi telah dikosongkan.');
     } catch (err) {
       handleFirestoreError(err, OperationType.DELETE, 'attendance');
+    }
+  };
+
+  const handleDownloadWord = async () => {
+    sound.playClick();
+    setIsExportingWord(true);
+    try {
+      const filterParts: string[] = [];
+      filterParts.push(selectedClass === 'ALL' ? 'Semua Kelas (X-1 s.d. XII-10)' : `Kelas ${selectedClass}`);
+      filterParts.push(selectedStatus === 'ALL' ? 'Semua Status' : `Status ${selectedStatus}`);
+      filterParts.push(selectedIsoDate ? `Tanggal ${selectedIsoDate.split('-').reverse().join('/')}` : 'Semua Tanggal');
+
+      const blob = await exportAttendanceToWord({
+        records: filteredRecords,
+        filterLabel: filterParts.join(' · '),
+        exportedAtWib: `${liveClock.liveDayName}, ${liveClock.longDate} (${liveClock.timeStr})`,
+        stats: {
+          total: stats.total,
+          hadir: stats.hadir,
+          ijin: stats.ijin,
+          alpa: stats.alpa,
+        },
+      });
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Rekap_Absensi_SMANDE_${selectedClass === 'ALL' ? 'Semua_Kelas' : selectedClass}.docx`;
+      link.click();
+      URL.revokeObjectURL(url);
+      showNotice(`File Word (.docx) berisi ${filteredRecords.length} data absensi berhasil diunduh.`);
+    } catch {
+      setErrorMsg('Gagal membuat dokumen Word (.docx). Silakan coba kembali.');
+    } finally {
+      setIsExportingWord(false);
     }
   };
 
@@ -517,25 +605,23 @@ export const StudentAttendanceView: React.FC = () => {
     sound.playClick();
     const header = [
       'No',
-      'Nama Siswa',
+      'Nama',
       'Kelas',
-      'Jenjang',
+      'Mata Pelajaran',
       'Hari',
       'Tanggal',
-      'Jam Detail',
-      'Jam Pelajaran',
-      'Kehadiran',
+      'Jam',
+      'Status',
       'Keterangan',
     ];
     const rows = filteredRecords.map((r, idx) => [
       String(idx + 1),
       `"${r.studentName.replace(/"/g, '""')}"`,
       r.className,
-      r.grade,
+      `"${(r.lessonPeriod || 'PENDIDIKAN PANCASILA').replace(/"/g, '""')}"`,
       r.dayName,
       `"${r.dateStr.replace(/"/g, '""')}"`,
       `"${r.timeStr.replace(/"/g, '""')}"`,
-      `"${r.lessonPeriod.replace(/"/g, '""')}"`,
       r.status,
       `"${r.note.replace(/"/g, '""')}"`,
     ]);
@@ -544,96 +630,140 @@ export const StudentAttendanceView: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `Absensi_Siswa_SMANDE_${selectedClass === 'ALL' ? 'Semua_Kelas' : selectedClass}.csv`;
+    link.download = `Rekap_Absensi_SMANDE_${selectedClass === 'ALL' ? 'Semua_Kelas' : selectedClass}.csv`;
     link.click();
     URL.revokeObjectURL(url);
     showNotice(`File CSV (${filteredRecords.length} data absensi) berhasil diunduh.`);
   };
 
-  const resetFilters = () => {
-    sound.playClick();
-    setSelectedClass('ALL');
-    setSelectedStatus('ALL');
-    setSelectedDay('ALL');
-    setSearchQuery('');
-  };
-
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Header & Live Indonesian Clock Strip */}
-      <div className="bg-white border border-sky-200 rounded-2xl p-5 md:p-6 shadow-sm">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="flex items-start gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-sky-600 text-white flex items-center justify-center shrink-0 shadow-sm">
-              <ClipboardCheck size={24} />
-            </div>
-            <div>
-              <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">
-                Absensi Siswa SMANDE (Kelas X-1 s.d. XII-10)
-              </h2>
-              <p className="text-xs md:text-sm text-slate-600 mt-0.5">
-                Pengunjung website dapat mengisi <strong>Nama</strong>, memilih <strong>Kelas (X-1 s.d. XII-10)</strong>, dan memilih status kehadiran{' '}
-                <span className="font-bold text-emerald-700">HADIR</span>,{' '}
-                <span className="font-bold text-amber-700">IJIN</span>, atau{' '}
-                <span className="font-bold text-rose-700">ALPA</span> secara manual beserta hari &amp; jam detail.
-              </p>
-            </div>
+    <div className="space-y-5 animate-fade-in">
+      {/* Top Manual Visitor Entry Card (Compact Horizontal Form matching Screenshot) */}
+      <form
+        onSubmit={handleAddRecord}
+        className="bg-white border border-sky-200 rounded-2xl p-4 md:p-5 shadow-sm space-y-3"
+      >
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-end">
+          {/* 1. Nama */}
+          <div className="lg:col-span-3">
+            <label htmlFor="manual-nama" className="block text-[11px] font-bold text-slate-600 mb-1">
+              Nama Siswa <span className="text-rose-600">*</span>
+            </label>
+            <input
+              id="manual-nama"
+              type="text"
+              required
+              maxLength={120}
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="Contoh: Siti Aisyah"
+              className="w-full px-3.5 py-2.5 text-xs md:text-sm rounded-xl border border-sky-200 bg-sky-50/40 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-400 text-slate-900 placeholder:text-slate-400"
+            />
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 shrink-0">
-            <div className="bg-sky-50 border border-sky-200 rounded-xl px-4 py-2.5 flex items-center gap-3">
-              <Clock size={18} className="text-sky-600 shrink-0" />
-              <div>
-                <div className="text-[11px] font-bold text-sky-800 uppercase tracking-wide">
-                  {liveClock.liveDayName}, {liveClock.dateStr}
-                </div>
-                <div className="text-base font-black text-slate-900 font-mono tabular-nums">
-                  {liveClock.timeStr}
-                </div>
-              </div>
-            </div>
+          {/* 2. Kelas */}
+          <div className="lg:col-span-2">
+            <label htmlFor="manual-kelas" className="block text-[11px] font-bold text-slate-600 mb-1">
+              Kelas <span className="text-rose-600">*</span>
+            </label>
+            <select
+              id="manual-kelas"
+              required
+              value={newClass}
+              onChange={(e) => setNewClass(e.target.value)}
+              className="w-full px-3 py-2.5 text-xs md:text-sm font-semibold rounded-xl border border-sky-200 bg-sky-50/40 text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-400 cursor-pointer"
+            >
+              <option value="">Pilih kelas</option>
+              {CLASS_GROUPS.map((group) => (
+                <optgroup key={group.grade} label={group.label}>
+                  {group.classes.map((cls) => (
+                    <option key={cls} value={cls}>
+                      {cls}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </div>
 
-            {authUser ? (
-              <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
-                <ShieldCheck
-                  size={16}
-                  className={isTeacherAdmin ? 'text-emerald-600 shrink-0' : 'text-sky-600 shrink-0'}
-                />
-                <div className="text-[11px] leading-tight">
-                  <div className="font-bold text-slate-800 truncate max-w-[140px]">
-                    {authUser.displayName || authUser.email}
-                  </div>
-                  <div className="text-slate-500">
-                    {isTeacherAdmin ? 'Mode Kelola Guru' : 'Pengguna Terdaftar'}
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleSignOut}
-                  className="btn-3d btn-3d-white px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-slate-700 flex items-center gap-1 cursor-pointer"
-                >
-                  <LogOut size={12} />
-                  <span>Keluar</span>
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                disabled={isAuthBusy}
-                onClick={handleTeacherSignIn}
-                className="btn-3d btn-3d-white px-3.5 py-2.5 rounded-xl text-xs font-bold text-sky-800 flex items-center gap-1.5 cursor-pointer disabled:opacity-60"
-              >
-                <LogIn size={14} />
-                <span>{isAuthBusy ? 'Membuka...' : 'Masuk Guru (Google)'}</span>
-              </button>
-            )}
+          {/* 3. Status Kehadiran */}
+          <div className="lg:col-span-2">
+            <label htmlFor="manual-status" className="block text-[11px] font-bold text-slate-600 mb-1">
+              Kehadiran <span className="text-rose-600">*</span>
+            </label>
+            <select
+              id="manual-status"
+              required
+              value={newStatus}
+              onChange={(e) => setNewStatus(e.target.value as '' | AttendanceStatus)}
+              className="w-full px-3 py-2.5 text-xs md:text-sm font-bold rounded-xl border border-sky-200 bg-sky-50/40 text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-400 cursor-pointer"
+            >
+              <option value="">Pilih status</option>
+              <option value="HADIR">HADIR</option>
+              <option value="IJIN">IJIN</option>
+              <option value="ALPA">ALPA</option>
+            </select>
+          </div>
+
+          {/* 4. Mata Pelajaran */}
+          <div className="lg:col-span-3">
+            <label htmlFor="manual-mapel" className="block text-[11px] font-bold text-slate-600 mb-1">
+              Mata Pelajaran
+            </label>
+            <input
+              id="manual-mapel"
+              type="text"
+              maxLength={100}
+              value={newSubject}
+              onChange={(e) => setNewSubject(e.target.value)}
+              placeholder="PENDIDIKAN PANCASILA"
+              className="w-full px-3.5 py-2.5 text-xs md:text-sm font-semibold rounded-xl border border-sky-200 bg-sky-50/40 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-400 text-slate-800 uppercase"
+            />
+          </div>
+
+          {/* 5. Simpan absensi */}
+          <div className="lg:col-span-2">
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full py-2.5 px-4 rounded-xl bg-[#0a5ea8] hover:bg-[#084d8a] text-white font-bold text-xs md:text-sm shadow-[0_4px_0_#063766] active:translate-y-[2px] active:shadow-[0_2px_0_#063766] transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60"
+            >
+              <ClipboardCheck size={15} />
+              <span>{isSubmitting ? 'Menyimpan...' : 'Simpan absensi'}</span>
+            </button>
           </div>
         </div>
-      </div>
 
-      {/* Feedback & Error Banners */}
+        {/* Neat secondary strip: Live Hari/Tanggal/Jam WIB + Optional Note */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-2 border-t border-sky-100">
+          <div className="flex items-center gap-2 text-xs text-slate-600">
+            <Clock size={14} className="text-[#0a5ea8] shrink-0" />
+            <span>Tercatat otomatis:</span>
+            <span className="font-bold text-slate-800">
+              {liveClock.liveDayName}, {liveClock.dateDisplay}
+            </span>
+            <span className="font-mono tabular-nums font-bold text-[#0a5ea8]">
+              {liveClock.timeStr}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 sm:w-80">
+            <input
+              id="manual-ket"
+              type="text"
+              maxLength={300}
+              value={newNote}
+              onChange={(e) => setNewNote(e.target.value)}
+              placeholder="Keterangan tambahan (opsional)..."
+              className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-400"
+            />
+          </div>
+        </div>
+      </form>
+
+      {/* Feedback & Error Alerts */}
       {feedbackMsg && (
-        <div className="bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-xl px-4 py-3 text-xs md:text-sm font-semibold flex items-center justify-between gap-2">
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-xl px-4 py-2.5 text-xs md:text-sm font-semibold flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
             <span>{feedbackMsg}</span>
@@ -649,7 +779,7 @@ export const StudentAttendanceView: React.FC = () => {
       )}
 
       {errorMsg && (
-        <div className="bg-rose-50 border border-rose-200 text-rose-900 rounded-xl px-4 py-3 text-xs md:text-sm font-semibold flex items-center justify-between gap-2">
+        <div className="bg-rose-50 border border-rose-200 text-rose-900 rounded-xl px-4 py-2.5 text-xs md:text-sm font-semibold flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <XCircle size={16} className="text-rose-600 shrink-0" />
             <span>{errorMsg}</span>
@@ -664,330 +794,102 @@ export const StudentAttendanceView: React.FC = () => {
         </div>
       )}
 
-      {/* Always-Visible Manual Visitor Attendance Form */}
-      <form
-        onSubmit={handleAddRecord}
-        className="bg-white border-2 border-sky-300 rounded-2xl p-5 md:p-6 space-y-4 shadow-sm"
-      >
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-sky-100 pb-3">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center shrink-0">
-              <UserPlus size={18} />
-            </div>
-            <div>
-              <h3 className="text-sm md:text-base font-black text-slate-900">
-                Isi Absensi Siswa (Manual oleh Pengunjung)
-              </h3>
-              <p className="text-[11px] text-slate-500">
-                Masukkan Nama Anda, pilih Kelas, dan pilih Kehadiran lalu klik Simpan Absensi.
-              </p>
-            </div>
-          </div>
+      {/* Rekap Absensi Card (Matching Screenshot Design) */}
+      <div className="bg-white border border-sky-200 rounded-2xl p-5 md:p-7 shadow-sm space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-xl font-black text-slate-900 tracking-tight">Rekap absensi</h2>
 
-          <button
-            type="button"
-            onClick={handleFillNowTime}
-            className="btn-3d btn-3d-white px-3 py-1.5 rounded-xl text-[11px] font-bold text-sky-800 flex items-center gap-1.5 cursor-pointer"
-          >
-            <RefreshCw size={13} />
-            <span>Perbarui Jam Sekarang (WIB)</span>
-          </button>
-        </div>
-
-        {/* Primary Required Fields: Nama, Kelas, Kehadiran */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label htmlFor="manual-nama" className="block text-xs font-bold text-slate-800 mb-1.5">
-              1. Nama Lengkap Siswa <span className="text-rose-600">*</span>
-            </label>
-            <input
-              id="manual-nama"
-              type="text"
-              required
-              maxLength={120}
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              placeholder="Ketik nama lengkap Anda..."
-              className="w-full px-3.5 py-2.5 text-xs md:text-sm rounded-xl border border-sky-300 bg-sky-50/40 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-400 font-medium text-slate-900"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="manual-kelas" className="block text-xs font-bold text-slate-800 mb-1.5">
-              2. Kelas (X-1 s.d. XII-10) <span className="text-rose-600">*</span>
-            </label>
-            <select
-              id="manual-kelas"
-              required
-              value={newClass}
-              onChange={(e) => setNewClass(e.target.value)}
-              className="w-full px-3.5 py-2.5 text-xs md:text-sm font-semibold rounded-xl border border-sky-300 bg-sky-50/40 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-400 cursor-pointer"
-            >
-              <option value="">-- Pilih Kelas --</option>
-              {CLASS_GROUPS.map((group) => (
-                <optgroup key={group.grade} label={group.label}>
-                  {group.classes.map((cls) => (
-                    <option key={cls} value={cls}>
-                      {cls}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="manual-status" className="block text-xs font-bold text-slate-800 mb-1.5">
-              3. Kehadiran (HADIR / IJIN / ALPA) <span className="text-rose-600">*</span>
-            </label>
-            <select
-              id="manual-status"
-              required
-              value={newStatus}
-              onChange={(e) => setNewStatus(e.target.value as '' | AttendanceStatus)}
-              className="w-full px-3.5 py-2.5 text-xs md:text-sm font-bold rounded-xl border border-sky-300 bg-sky-50/40 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-400 cursor-pointer"
-            >
-              <option value="">-- Pilih Kehadiran --</option>
-              <option value="HADIR">HADIR</option>
-              <option value="IJIN">IJIN</option>
-              <option value="ALPA">ALPA</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Detail Hari, Tanggal, Jam WIB, Jam Pelajaran, Keterangan */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 pt-1">
-          <div>
-            <label htmlFor="manual-hari" className="block text-[11px] font-bold text-slate-600 mb-1">
-              Hari
-            </label>
-            <select
-              id="manual-hari"
-              value={newDay}
-              onChange={(e) => setNewDay(e.target.value)}
-              className="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-400"
-            >
-              {INDONESIAN_DAYS.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="manual-tanggal" className="block text-[11px] font-bold text-slate-600 mb-1">
-              Tanggal Detail
-            </label>
-            <input
-              id="manual-tanggal"
-              type="text"
-              maxLength={60}
-              value={newDateStr}
-              onChange={(e) => setNewDateStr(e.target.value)}
-              placeholder="18 November 2026"
-              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-400"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="manual-jam" className="block text-[11px] font-bold text-slate-600 mb-1">
-              Jam Detail (WIB)
-            </label>
-            <input
-              id="manual-jam"
-              type="text"
-              maxLength={60}
-              value={newTimeStr}
-              onChange={(e) => setNewTimeStr(e.target.value)}
-              placeholder="07:05:12 WIB"
-              className="w-full px-3 py-2 text-xs font-mono tabular-nums rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-400"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="manual-jp" className="block text-[11px] font-bold text-slate-600 mb-1">
-              Jam Pelajaran
-            </label>
-            <select
-              id="manual-jp"
-              value={newPeriod}
-              onChange={(e) => setNewPeriod(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-400"
-            >
-              {LESSON_PERIOD_OPTIONS.map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="manual-ket" className="block text-[11px] font-bold text-slate-600 mb-1">
-              Keterangan (Opsional)
-            </label>
-            <input
-              id="manual-ket"
-              type="text"
-              maxLength={300}
-              value={newNote}
-              onChange={(e) => setNewNote(e.target.value)}
-              placeholder="Contoh: Hadir / Ijin sakit"
-              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-400"
-            />
-          </div>
-        </div>
-
-        <div className="flex justify-end pt-1">
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="btn-3d btn-3d-sky px-6 py-2.5 rounded-xl text-xs md:text-sm font-bold flex items-center gap-2 cursor-pointer disabled:opacity-60"
-          >
-            <ClipboardCheck size={16} />
-            <span>{isSubmitting ? 'Menyimpan...' : 'Simpan Absensi'}</span>
-          </button>
-        </div>
-      </form>
-
-      {/* Summary Statistics Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        <div className="bg-white border border-sky-200 rounded-xl p-4">
-          <div className="flex items-center justify-between text-xs font-bold text-slate-500">
-            <span>Total Data</span>
-            <Users size={15} className="text-sky-600" />
-          </div>
-          <div className="mt-1.5 text-2xl font-black text-slate-900 tabular-nums">{stats.total}</div>
-          <div className="text-[11px] text-slate-500 mt-0.5">
-            {selectedClass === 'ALL' ? 'Semua Kelas (X–XII)' : `Kelas ${selectedClass}`}
-          </div>
-        </div>
-
-        <div className="bg-white border border-emerald-200 rounded-xl p-4">
-          <div className="flex items-center justify-between text-xs font-bold text-emerald-700">
-            <span>HADIR</span>
-            <CheckCircle2 size={15} className="text-emerald-600" />
-          </div>
-          <div className="mt-1.5 text-2xl font-black text-emerald-800 tabular-nums">{stats.hadir}</div>
-          <div className="text-[11px] text-emerald-700 mt-0.5 tabular-nums">{stats.hadirPct}% kehadiran</div>
-        </div>
-
-        <div className="bg-white border border-amber-200 rounded-xl p-4">
-          <div className="flex items-center justify-between text-xs font-bold text-amber-700">
-            <span>IJIN</span>
-            <FileText size={15} className="text-amber-600" />
-          </div>
-          <div className="mt-1.5 text-2xl font-black text-amber-800 tabular-nums">{stats.ijin}</div>
-          <div className="text-[11px] text-amber-700 mt-0.5">Sakit / Dispen / Ijin</div>
-        </div>
-
-        <div className="bg-white border border-rose-200 rounded-xl p-4">
-          <div className="flex items-center justify-between text-xs font-bold text-rose-700">
-            <span>ALPA</span>
-            <XCircle size={15} className="text-rose-600" />
-          </div>
-          <div className="mt-1.5 text-2xl font-black text-rose-800 tabular-nums">{stats.alpa}</div>
-          <div className="text-[11px] text-rose-700 mt-0.5">Tanpa keterangan</div>
-        </div>
-
-        <div className="bg-white border border-indigo-200 rounded-xl p-4 col-span-2 sm:col-span-1">
-          <div className="flex items-center justify-between text-xs font-bold text-indigo-700">
-            <span>Persentase Hadir</span>
-            <Calendar size={15} className="text-indigo-600" />
-          </div>
-          <div className="mt-1.5 text-2xl font-black text-indigo-900 tabular-nums">{stats.hadirPct}%</div>
-          <div className="w-full h-1.5 bg-indigo-100 rounded-full mt-1.5 overflow-hidden">
-            <div
-              className="h-full bg-indigo-600 rounded-full transition-all duration-300"
-              style={{ width: `${stats.hadirPct}%` }}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Filter Bar & Table Controls */}
-      <div className="bg-white border border-sky-200 rounded-2xl p-4 md:p-5 shadow-sm space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-sky-900">
-            <Filter size={15} className="text-sky-600" />
-            <span>Filter Daftar Kehadiran (Kelas, Status &amp; Hari)</span>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              disabled={filteredRecords.length === 0}
-              onClick={handleDownloadCsv}
-              className="btn-3d btn-3d-emerald px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-            >
-              <Download size={15} />
-              <span>Unduh CSV</span>
-            </button>
-
-            {isTeacherAdmin && records.length > 0 && !confirmClearAll && (
+          {authUser ? (
+            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5">
+              <ShieldCheck
+                size={15}
+                className={isTeacherAdmin ? 'text-emerald-600 shrink-0' : 'text-sky-600 shrink-0'}
+              />
+              <span className="text-xs font-bold text-slate-800 truncate max-w-[150px]">
+                {authUser.displayName || authUser.email}
+              </span>
               <button
                 type="button"
-                onClick={() => setConfirmClearAll(true)}
-                className="btn-3d btn-3d-white px-3.5 py-2 rounded-xl text-xs font-bold text-rose-700 flex items-center gap-1.5 cursor-pointer"
+                onClick={handleSignOut}
+                className="btn-3d btn-3d-white px-2.5 py-1 rounded-lg text-[11px] font-bold text-slate-700 flex items-center gap-1 cursor-pointer"
               >
-                <Trash2 size={14} />
-                <span>Kosongkan Daftar</span>
+                <LogOut size={12} />
+                <span>Keluar</span>
               </button>
-            )}
+            </div>
+          ) : (
+            <button
+              type="button"
+              disabled={isAuthBusy}
+              onClick={handleTeacherSignIn}
+              className="btn-3d btn-3d-white px-3 py-1.5 rounded-xl text-xs font-bold text-[#0a5ea8] flex items-center gap-1.5 cursor-pointer disabled:opacity-60"
+            >
+              <LogIn size={14} />
+              <span>{isAuthBusy ? 'Membuka...' : 'Masuk Guru (Google)'}</span>
+            </button>
+          )}
+        </div>
 
-            {isTeacherAdmin && confirmClearAll && (
-              <div className="flex items-center gap-1.5 bg-rose-50 border border-rose-200 rounded-xl px-2.5 py-1">
-                <span className="text-[11px] font-bold text-rose-800">Hapus semua?</span>
-                <button
-                  type="button"
-                  onClick={handleClearAll}
-                  className="btn-3d btn-3d-rose px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer"
-                >
-                  Ya, Hapus
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setConfirmClearAll(false)}
-                  className="btn-3d btn-3d-white px-2.5 py-1 rounded-lg text-[11px] font-bold text-slate-700 cursor-pointer"
-                >
-                  Batal
-                </button>
-              </div>
-            )}
+        {/* Official School Crest & Header Divider */}
+        <div className="flex items-center gap-4 pb-4 border-b-2 border-[#0a5ea8]">
+          <div className="w-14 h-14 rounded-xl bg-white border border-sky-100 p-1 flex items-center justify-center shrink-0">
+            <img
+              src="/assets/aistudio/Logo_Pembelajaran_Interaktif_Pendidikan_Pancasila__1__a1b85239.png"
+              alt="Logo SMA Negeri 1 Mande"
+              className="w-full h-full object-contain"
+            />
+          </div>
+          <div>
+            <div className="text-lg md:text-xl font-black text-[#0a5ea8] tracking-tight uppercase">
+              SMA NEGERI 1 MANDE
+            </div>
+            <div className="text-xs md:text-sm text-slate-600 font-medium">
+              Rekap Absensi Digital · Mata Pelajaran PENDIDIKAN PANCASILA
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <div>
-            <label htmlFor="filter-cari" className="block text-[11px] font-bold text-slate-600 mb-1">
-              Cari Nama Siswa / Keterangan
+        {/* Filter Bar: Tanggal + Semua tanggal + Kelas + Status + Cari */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <label htmlFor="filter-tanggal" className="text-xs font-bold text-slate-700">
+              Tanggal
             </label>
-            <div className="relative">
-              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                id="filter-cari"
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Ketik nama siswa atau kelas..."
-                className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400"
-              />
-            </div>
+            <input
+              id="filter-tanggal"
+              type="date"
+              value={selectedIsoDate}
+              onChange={(e) => {
+                sound.playClick();
+                setSelectedIsoDate(e.target.value);
+              }}
+              className="px-3 py-2 text-xs font-semibold rounded-xl border border-sky-200 bg-sky-50/40 text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-400 cursor-pointer tabular-nums"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                sound.playClick();
+                setSelectedIsoDate('');
+              }}
+              className={`px-4 py-2 rounded-xl text-xs font-bold border-2 transition-all cursor-pointer ${
+                !selectedIsoDate
+                  ? 'border-[#0a5ea8] bg-sky-50 text-[#0a5ea8]'
+                  : 'border-sky-300 bg-white text-[#0a5ea8] hover:bg-sky-50'
+              }`}
+            >
+              Semua tanggal
+            </button>
           </div>
 
-          <div>
-            <label htmlFor="filter-kelas" className="block text-[11px] font-bold text-slate-600 mb-1">
-              Dropdown Kelas (X-1 s.d. XII-10)
-            </label>
+          <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
             <select
-              id="filter-kelas"
+              aria-label="Filter Kelas"
               value={selectedClass}
               onChange={(e) => {
                 sound.playClick();
                 setSelectedClass(e.target.value);
               }}
-              className="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-sky-300 bg-sky-50/70 text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-400 cursor-pointer"
+              className="px-3 py-2 text-xs font-semibold rounded-xl border border-sky-200 bg-sky-50/40 text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-400 cursor-pointer"
             >
               <option value="ALL">Semua Kelas (X-1 s.d. XII-10)</option>
               {CLASS_GROUPS.map((group) => (
@@ -1000,150 +902,127 @@ export const StudentAttendanceView: React.FC = () => {
                 </optgroup>
               ))}
             </select>
-          </div>
 
-          <div>
-            <label htmlFor="filter-status" className="block text-[11px] font-bold text-slate-600 mb-1">
-              Dropdown Status (HADIR / IJIN / ALPA)
-            </label>
             <select
-              id="filter-status"
+              aria-label="Filter Status Kehadiran"
               value={selectedStatus}
               onChange={(e) => {
                 sound.playClick();
                 setSelectedStatus(e.target.value as 'ALL' | AttendanceStatus);
               }}
-              className="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-sky-300 bg-sky-50/70 text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-400 cursor-pointer"
+              className="px-3 py-2 text-xs font-semibold rounded-xl border border-sky-200 bg-sky-50/40 text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-400 cursor-pointer"
             >
-              <option value="ALL">Semua Status (HADIR, IJIN, ALPA)</option>
+              <option value="ALL">Semua Status</option>
               <option value="HADIR">HADIR</option>
               <option value="IJIN">IJIN</option>
               <option value="ALPA">ALPA</option>
             </select>
-          </div>
 
-          <div>
-            <label htmlFor="filter-hari" className="block text-[11px] font-bold text-slate-600 mb-1">
-              Dropdown Hari
-            </label>
-            <select
-              id="filter-hari"
-              value={selectedDay}
-              onChange={(e) => {
-                sound.playClick();
-                setSelectedDay(e.target.value);
-              }}
-              className="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-sky-300 bg-sky-50/70 text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-400 cursor-pointer"
-            >
-              <option value="ALL">Semua Hari (Senin – Sabtu)</option>
-              {INDONESIAN_DAYS.map((day) => (
-                <option key={day} value={day}>
-                  Hari {day}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Cari nama..."
+                className="w-40 sm:w-48 pl-8 pr-3 py-2 text-xs rounded-xl border border-sky-200 bg-sky-50/40 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-400"
+              />
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Attendance Data Table Directly Visible to Visitors */}
-      <div className="bg-white border border-sky-200 rounded-2xl shadow-sm overflow-hidden">
-        <div className="px-5 py-3.5 border-b border-sky-100 bg-sky-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div>
-            <h3 className="text-sm font-black text-slate-900">
-              Daftar Kehadiran Siswa ({filteredRecords.length} Data)
-            </h3>
-            <p className="text-[11px] text-slate-500">
-              Data hasil pengisian manual pengunjung ditampilkan langsung secara terbuka di sini.
-            </p>
+        {/* Summary Counters Strip matching Screenshot */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2 text-xs font-black tabular-nums">
+            <span className="px-3 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800">
+              HADIR: {stats.hadir}
+            </span>
+            <span className="px-3 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800">
+              IJIN: {stats.ijin}
+            </span>
+            <span className="px-3 py-1 rounded-lg bg-rose-50 border border-rose-200 text-rose-800">
+              ALPA: {stats.alpa}
+            </span>
+            <span className="px-3 py-1 rounded-lg bg-sky-100 border border-sky-200 text-[#0a5ea8]">
+              TOTAL: {stats.total}
+            </span>
+            <span className="px-2 py-1 text-slate-700 font-bold">
+              Kelas: {stats.distinctClasses}
+            </span>
           </div>
 
           <div className="flex items-center gap-2 text-xs">
-            <span className="text-slate-600 font-semibold">Tampilkan:</span>
+            <span className="text-slate-500 font-semibold">Baris:</span>
             <select
               value={rowsPerPage}
               onChange={(e) => setRowsPerPage(Number(e.target.value))}
               className="px-2.5 py-1 rounded-lg border border-sky-200 bg-white text-xs font-bold text-slate-700 cursor-pointer"
             >
-              <option value={30}>30 Baris</option>
-              <option value={60}>60 Baris</option>
-              <option value={0}>Semua Data ({filteredRecords.length})</option>
+              <option value={30}>30</option>
+              <option value={60}>60</option>
+              <option value={0}>Semua ({filteredRecords.length})</option>
             </select>
           </div>
         </div>
 
-        {isLoading ? (
-          <div className="p-10 text-center text-xs font-semibold text-slate-500">
-            Memuat daftar absensi siswa...
-          </div>
-        ) : records.length === 0 ? (
-          <div className="p-10 text-center space-y-2">
-            <div className="w-12 h-12 mx-auto rounded-2xl bg-sky-50 border border-sky-200 text-sky-600 flex items-center justify-center">
-              <ClipboardCheck size={22} />
-            </div>
-            <p className="text-sm font-bold text-slate-800">
-              Belum ada data absensi siswa.
-            </p>
-            <p className="text-xs text-slate-500 max-w-md mx-auto">
-              Daftar absensi masih kosong. Silakan isi <strong>Nama Lengkap</strong>, pilih <strong>Kelas (X-1 s.d. XII-10)</strong>, dan pilih <strong>Kehadiran (HADIR / IJIN / ALPA)</strong> pada formulir di atas.
-            </p>
-          </div>
-        ) : paginatedRecords.length === 0 ? (
-          <div className="p-10 text-center space-y-3">
-            <p className="text-sm font-bold text-slate-700">
-              Tidak ada data absensi yang cocok dengan filter saat ini.
-            </p>
-            <button
-              type="button"
-              onClick={resetFilters}
-              className="btn-3d btn-3d-sky px-4 py-2 rounded-xl text-xs font-bold cursor-pointer"
-            >
-              Reset Semua Filter
-            </button>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-black uppercase tracking-wider text-slate-600">
-                  <th className="py-3 px-4 w-12">No</th>
-                  <th className="py-3 px-4 min-w-[170px]">Nama Siswa</th>
-                  <th className="py-3 px-4 w-24">Kelas</th>
-                  <th className="py-3 px-4 min-w-[165px]">Hari &amp; Tanggal Detail</th>
-                  <th className="py-3 px-4 min-w-[185px]">Jam Detail &amp; JP</th>
-                  <th className="py-3 px-4 min-w-[195px]">Status (HADIR / IJIN / ALPA)</th>
-                  <th className="py-3 px-4 min-w-[200px]">Keterangan</th>
-                  {isTeacherAdmin && <th className="py-3 px-4 w-14 text-center">Hapus</th>}
+        {/* Deep-Blue Header Data Table */}
+        <div className="overflow-x-auto border border-slate-200 rounded-xl">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-[#0a5ea8] text-white text-xs font-bold">
+                <th className="py-3 px-4 w-12">No</th>
+                <th className="py-3 px-4 min-w-[160px]">Nama</th>
+                <th className="py-3 px-4 w-24">Kelas</th>
+                <th className="py-3 px-4 min-w-[170px]">Mata Pelajaran</th>
+                <th className="py-3 px-4 w-24">Hari</th>
+                <th className="py-3 px-4 w-28">Tanggal</th>
+                <th className="py-3 px-4 w-28">Jam</th>
+                <th className="py-3 px-4 min-w-[140px]">Status</th>
+                {isTeacherAdmin && <th className="py-3 px-4 w-16 text-center">Hapus</th>}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200 text-xs">
+              {isLoading ? (
+                <tr>
+                  <td colSpan={isTeacherAdmin ? 9 : 8} className="py-6 px-4 text-slate-500 font-medium">
+                    Memuat data absensi...
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-xs">
-                {paginatedRecords.map((rec, idx) => {
+              ) : paginatedRecords.length === 0 ? (
+                <tr>
+                  <td colSpan={isTeacherAdmin ? 9 : 8} className="py-5 px-4 text-slate-600">
+                    Belum ada data absensi pada pilihan ini.
+                  </td>
+                </tr>
+              ) : (
+                paginatedRecords.map((rec, idx) => {
                   const rowNum = (rowsPerPage === 0 ? 0 : (currentPage - 1) * rowsPerPage) + idx + 1;
                   const badge = getStatusBadgeConfig(rec.status);
                   const StatusIcon = badge.Icon;
 
                   return (
                     <tr key={rec.id} className="hover:bg-sky-50/40 transition-colors">
-                      <td className="py-3 px-4 font-mono tabular-nums text-slate-500 font-semibold">
+                      <td className="py-3 px-4 font-mono tabular-nums text-slate-600 font-semibold">
                         {rowNum}
                       </td>
-                      <td className="py-3 px-4 font-bold text-slate-900">
-                        {rec.studentName}
-                      </td>
                       <td className="py-3 px-4">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-md bg-sky-50 border border-sky-200 text-sky-900 font-bold text-[11px] tabular-nums">
-                          {rec.className}
-                        </span>
+                        <div className="font-bold text-slate-900">{rec.studentName}</div>
+                        {rec.note && (
+                          <div className="text-[11px] text-slate-500 mt-0.5">{rec.note}</div>
+                        )}
                       </td>
-                      <td className="py-3 px-4">
-                        <div className="font-bold text-slate-800">{rec.dayName}</div>
-                        <div className="text-[11px] text-slate-500 tabular-nums">{rec.dateStr}</div>
+                      <td className="py-3 px-4 font-bold text-[#0a5ea8] tabular-nums">
+                        {rec.className}
                       </td>
-                      <td className="py-3 px-4">
-                        <div className="font-mono tabular-nums font-bold text-slate-800">
-                          {rec.timeStr}
-                        </div>
-                        <div className="text-[11px] text-slate-500">{rec.lessonPeriod}</div>
+                      <td className="py-3 px-4 font-medium text-slate-700 uppercase">
+                        {rec.lessonPeriod || 'PENDIDIKAN PANCASILA'}
+                      </td>
+                      <td className="py-3 px-4 font-semibold text-slate-800">{rec.dayName}</td>
+                      <td className="py-3 px-4 font-mono tabular-nums text-slate-700">
+                        {rec.dateStr}
+                      </td>
+                      <td className="py-3 px-4 font-mono tabular-nums font-semibold text-slate-800">
+                        {rec.timeStr}
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
@@ -1169,7 +1048,6 @@ export const StudentAttendanceView: React.FC = () => {
                           )}
                         </div>
                       </td>
-                      <td className="py-3 px-4 text-slate-600">{rec.note}</td>
                       {isTeacherAdmin && (
                         <td className="py-3 px-4 text-center">
                           <button
@@ -1184,15 +1062,15 @@ export const StudentAttendanceView: React.FC = () => {
                       )}
                     </tr>
                   );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
 
-        {/* Pagination Controls */}
+        {/* Pagination */}
         {rowsPerPage > 0 && filteredRecords.length > rowsPerPage && (
-          <div className="px-5 py-3 border-t border-sky-100 bg-slate-50 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex flex-wrap items-center justify-between gap-3 text-xs pt-1">
             <div className="text-slate-600 font-semibold tabular-nums">
               Halaman {currentPage} dari {totalPages} ({filteredRecords.length} total data)
             </div>
@@ -1218,6 +1096,74 @@ export const StudentAttendanceView: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* Bottom Action Buttons Bar (matching Screenshot: Unduh Word .docx, Unduh CSV, Segarkan data) */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <button
+              type="button"
+              disabled={isExportingWord}
+              onClick={handleDownloadWord}
+              className="px-5 py-2.5 rounded-xl bg-[#0a5ea8] hover:bg-[#084d8a] text-white font-bold text-xs md:text-sm shadow-[0_4px_0_#063766] active:translate-y-[2px] active:shadow-[0_2px_0_#063766] transition-all flex items-center gap-2 cursor-pointer disabled:opacity-60"
+            >
+              <FileDown size={15} />
+              <span>{isExportingWord ? 'Menyiapkan Word...' : 'Unduh Word (.docx)'}</span>
+            </button>
+
+            <button
+              type="button"
+              disabled={filteredRecords.length === 0}
+              onClick={handleDownloadCsv}
+              className="btn-3d btn-3d-white px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold text-[#0a5ea8] border-2 border-[#0a5ea8] flex items-center gap-2 cursor-pointer disabled:opacity-50"
+            >
+              <Download size={15} />
+              <span>Unduh CSV</span>
+            </button>
+
+            <button
+              type="button"
+              disabled={isRefreshing}
+              onClick={handleRefreshData}
+              className="btn-3d btn-3d-white px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold text-[#0a5ea8] border-2 border-[#0a5ea8] flex items-center gap-2 cursor-pointer disabled:opacity-60"
+            >
+              <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />
+              <span>{isRefreshing ? 'Menyegarkan...' : 'Segarkan data'}</span>
+            </button>
+          </div>
+
+          {isTeacherAdmin && records.length > 0 && (
+            <div>
+              {!confirmClearAll ? (
+                <button
+                  type="button"
+                  onClick={() => setConfirmClearAll(true)}
+                  className="btn-3d btn-3d-white px-3.5 py-2 rounded-xl text-xs font-bold text-rose-700 flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Trash2 size={14} />
+                  <span>Kosongkan Daftar</span>
+                </button>
+              ) : (
+                <div className="flex items-center gap-1.5 bg-rose-50 border border-rose-200 rounded-xl px-2.5 py-1">
+                  <span className="text-[11px] font-bold text-rose-800">Hapus semua?</span>
+                  <button
+                    type="button"
+                    onClick={handleClearAll}
+                    className="btn-3d btn-3d-rose px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer"
+                  >
+                    Ya, Hapus
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmClearAll(false)}
+                    className="btn-3d btn-3d-white px-2.5 py-1 rounded-lg text-[11px] font-bold text-slate-700 cursor-pointer"
+                  >
+                    Batal
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
