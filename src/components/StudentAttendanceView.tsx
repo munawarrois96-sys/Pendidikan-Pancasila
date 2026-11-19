@@ -41,7 +41,12 @@ import {
 } from 'firebase/database';
 import { onAuthStateChanged, signInWithPopup, signOut, User } from 'firebase/auth';
 import { AttendanceStatus, GradeLevel, StudentAttendanceRecord } from '../types';
-import { CLASS_GROUPS, INDONESIAN_DAYS } from '../data/attendanceData';
+import {
+  CLASS_GROUPS,
+  compareAttendanceRecords,
+  INDONESIAN_DAYS,
+  SMANDE_OFFICIAL_LOGO_URL,
+} from '../data/attendanceData';
 import { auth, db, googleAuthProvider, handleFirestoreError, OperationType, rtdb } from '../lib/firebase';
 import { exportAttendanceToWord } from '../utils/exportAttendanceWord';
 import { sound } from '../utils/audio';
@@ -136,14 +141,20 @@ export const StudentAttendanceView: React.FC = () => {
   const [authUser, setAuthUser] = useState<User | null>(auth.currentUser);
   const [isAuthBusy, setIsAuthBusy] = useState(false);
 
+  const [sortMode, setSortMode] = useState<'class_name_time' | 'newest'>('class_name_time');
+
   const records = useMemo<StudentAttendanceRecord[]>(() => {
     const merged = new Map<string, TimedAttendanceRecord>();
     firestoreRecords.forEach((r) => merged.set(r.id, r));
     rtdbRecords.forEach((r) => merged.set(r.id, r));
-    return Array.from(merged.values())
-      .sort((a, b) => b.createdAtMs - a.createdAtMs)
-      .map(({ createdAtMs: _createdAtMs, ...rest }) => rest);
-  }, [rtdbRecords, firestoreRecords]);
+    const list = Array.from(merged.values());
+    if (sortMode === 'newest') {
+      list.sort((a, b) => b.createdAtMs - a.createdAtMs);
+    } else {
+      list.sort(compareAttendanceRecords);
+    }
+    return list.map(({ createdAtMs: _createdAtMs, ...rest }) => rest);
+  }, [rtdbRecords, firestoreRecords, sortMode]);
 
   // Manual Visitor Entry Form State (clean 5-field top bar matching screenshot)
   const [newName, setNewName] = useState('');
@@ -420,9 +431,7 @@ export const StudentAttendanceView: React.FC = () => {
       ? now.dayName
       : 'Senin';
     const resolvedDateStr = now.dateDisplay.slice(0, 60);
-    const resolvedTimeStr = (
-      newStatus === 'ALPA' ? '— (Tanpa Keterangan)' : now.timeStr
-    ).slice(0, 60);
+    const resolvedTimeStr = now.timeStr.slice(0, 60);
     const resolvedSubject = (newSubject.trim() || 'PENDIDIKAN PANCASILA').slice(0, 100);
     const resolvedNote = (
       newNote.trim() ||
@@ -493,11 +502,7 @@ export const StudentAttendanceView: React.FC = () => {
     ).slice(0, 300);
 
     const nextTimeStr = (
-      nextStatus === 'ALPA'
-        ? '— (Tanpa Keterangan)'
-        : rec.timeStr.startsWith('—')
-        ? nowTime
-        : rec.timeStr
+      rec.timeStr && !rec.timeStr.startsWith('—') ? rec.timeStr : nowTime
     ).slice(0, 60);
 
     const recordPath = `attendance/${rec.id}`;
@@ -614,7 +619,8 @@ export const StudentAttendanceView: React.FC = () => {
       'Status',
       'Keterangan',
     ];
-    const rows = filteredRecords.map((r, idx) => [
+    const sortedForCsv = [...filteredRecords].sort(compareAttendanceRecords);
+    const rows = sortedForCsv.map((r, idx) => [
       String(idx + 1),
       `"${r.studentName.replace(/"/g, '""')}"`,
       r.className,
@@ -834,7 +840,7 @@ export const StudentAttendanceView: React.FC = () => {
         <div className="flex items-center gap-4 pb-4 border-b-2 border-[#0a5ea8]">
           <div className="w-14 h-14 rounded-xl bg-white border border-sky-100 p-1 flex items-center justify-center shrink-0">
             <img
-              src="/assets/aistudio/Logo_Pembelajaran_Interaktif_Pendidikan_Pancasila__1__a1b85239.png"
+              src={SMANDE_OFFICIAL_LOGO_URL}
               alt="Logo SMA Negeri 1 Mande"
               className="w-full h-full object-contain"
             />
@@ -951,17 +957,34 @@ export const StudentAttendanceView: React.FC = () => {
             </span>
           </div>
 
-          <div className="flex items-center gap-2 text-xs">
-            <span className="text-slate-500 font-semibold">Baris:</span>
-            <select
-              value={rowsPerPage}
-              onChange={(e) => setRowsPerPage(Number(e.target.value))}
-              className="px-2.5 py-1 rounded-lg border border-sky-200 bg-white text-xs font-bold text-slate-700 cursor-pointer"
-            >
-              <option value={30}>30</option>
-              <option value={60}>60</option>
-              <option value={0}>Semua ({filteredRecords.length})</option>
-            </select>
+          <div className="flex flex-wrap items-center gap-3 text-xs">
+            <div className="flex items-center gap-1.5">
+              <span className="text-slate-500 font-semibold">Urutan:</span>
+              <select
+                aria-label="Urutan Data Absensi"
+                value={sortMode}
+                onChange={(e) => {
+                  sound.playClick();
+                  setSortMode(e.target.value as 'class_name_time' | 'newest');
+                }}
+                className="px-2.5 py-1 rounded-lg border border-sky-200 bg-white text-xs font-bold text-slate-700 cursor-pointer"
+              >
+                <option value="class_name_time">Kelas → Nama → Jam</option>
+                <option value="newest">Terbaru Masuk</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-slate-500 font-semibold">Baris:</span>
+              <select
+                value={rowsPerPage}
+                onChange={(e) => setRowsPerPage(Number(e.target.value))}
+                className="px-2.5 py-1 rounded-lg border border-sky-200 bg-white text-xs font-bold text-slate-700 cursor-pointer"
+              >
+                <option value={30}>30</option>
+                <option value={60}>60</option>
+                <option value={0}>Semua ({filteredRecords.length})</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -970,15 +993,15 @@ export const StudentAttendanceView: React.FC = () => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-[#0a5ea8] text-white text-xs font-bold">
-                <th className="py-3 px-4 w-12">No</th>
-                <th className="py-3 px-4 min-w-[160px]">Nama</th>
-                <th className="py-3 px-4 w-24">Kelas</th>
-                <th className="py-3 px-4 min-w-[170px]">Mata Pelajaran</th>
-                <th className="py-3 px-4 w-24">Hari</th>
-                <th className="py-3 px-4 w-28">Tanggal</th>
-                <th className="py-3 px-4 w-28">Jam</th>
-                <th className="py-3 px-4 min-w-[140px]">Status</th>
-                {isTeacherAdmin && <th className="py-3 px-4 w-16 text-center">Hapus</th>}
+                <th className="py-3 px-3.5 w-12 whitespace-nowrap">No</th>
+                <th className="py-3 px-3.5 min-w-[175px]">Nama</th>
+                <th className="py-3 px-3.5 min-w-[85px] whitespace-nowrap">Kelas</th>
+                <th className="py-3 px-3.5 min-w-[170px] whitespace-nowrap">Mata Pelajaran</th>
+                <th className="py-3 px-3.5 min-w-[90px] whitespace-nowrap">Hari</th>
+                <th className="py-3 px-3.5 min-w-[115px] whitespace-nowrap">Tanggal</th>
+                <th className="py-3 px-3.5 min-w-[130px] whitespace-nowrap">Jam</th>
+                <th className="py-3 px-3.5 min-w-[145px] whitespace-nowrap">Status</th>
+                {isTeacherAdmin && <th className="py-3 px-3.5 w-16 text-center whitespace-nowrap">Hapus</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 text-xs">
@@ -1002,26 +1025,26 @@ export const StudentAttendanceView: React.FC = () => {
 
                   return (
                     <tr key={rec.id} className="hover:bg-sky-50/40 transition-colors">
-                      <td className="py-3 px-4 font-mono tabular-nums text-slate-600 font-semibold">
+                      <td className="py-3 px-3.5 font-mono tabular-nums text-slate-600 font-semibold whitespace-nowrap">
                         {rowNum}
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-3.5">
                         <div className="font-bold text-slate-900">{rec.studentName}</div>
                         {rec.note && (
                           <div className="text-[11px] text-slate-500 mt-0.5">{rec.note}</div>
                         )}
                       </td>
-                      <td className="py-3 px-4 font-bold text-[#0a5ea8] tabular-nums">
+                      <td className="py-3 px-3.5 font-bold text-[#0a5ea8] tabular-nums whitespace-nowrap">
                         {rec.className}
                       </td>
-                      <td className="py-3 px-4 font-medium text-slate-700 uppercase">
+                      <td className="py-3 px-3.5 font-medium text-slate-700 uppercase whitespace-nowrap">
                         {rec.lessonPeriod || 'PENDIDIKAN PANCASILA'}
                       </td>
-                      <td className="py-3 px-4 font-semibold text-slate-800">{rec.dayName}</td>
-                      <td className="py-3 px-4 font-mono tabular-nums text-slate-700">
+                      <td className="py-3 px-3.5 font-semibold text-slate-800 whitespace-nowrap">{rec.dayName}</td>
+                      <td className="py-3 px-3.5 font-mono tabular-nums text-slate-700 whitespace-nowrap">
                         {rec.dateStr}
                       </td>
-                      <td className="py-3 px-4 font-mono tabular-nums font-semibold text-slate-800">
+                      <td className="py-3 px-3.5 font-mono tabular-nums font-semibold text-slate-800 whitespace-nowrap">
                         {rec.timeStr}
                       </td>
                       <td className="py-3 px-4">
