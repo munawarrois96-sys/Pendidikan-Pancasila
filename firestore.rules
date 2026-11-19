@@ -1,0 +1,144 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net: Default-Deny Catch-All
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ==================== GLOBAL HELPERS ====================
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isEmailVerified() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isEmailVerified() && (
+        request.auth.token.email == 'munawarrois81@guru.sma.belajar.id' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // ==================== VALIDATION BLUEPRINTS ====================
+    function isValidAttendanceRecord(data) {
+      return data.keys().hasAll([
+          'studentName', 'className', 'grade', 'dayName',
+          'dateStr', 'timeStr', 'lessonPeriod', 'status', 'note', 'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'studentName', 'className', 'grade', 'dayName',
+          'dateStr', 'timeStr', 'lessonPeriod', 'status', 'note', 'createdAt'
+        ])
+        && data.studentName is string && data.studentName.size() >= 1 && data.studentName.size() <= 120
+        && data.className is string && data.className.size() >= 3 && data.className.size() <= 10
+        && data.className.matches('^(X|XI|XII)-([1-9]|10)$')
+        && data.grade is string && data.grade in ['X', 'XI', 'XII']
+        && (
+          (data.grade == 'X' && data.className.matches('^X-([1-9]|10)$')) ||
+          (data.grade == 'XI' && data.className.matches('^XI-([1-9]|10)$')) ||
+          (data.grade == 'XII' && data.className.matches('^XII-([1-9]|10)$'))
+        )
+        && data.dayName is string && data.dayName in ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
+        && data.dateStr is string && data.dateStr.size() >= 1 && data.dateStr.size() <= 60
+        && data.timeStr is string && data.timeStr.size() >= 1 && data.timeStr.size() <= 60
+        && data.lessonPeriod is string && data.lessonPeriod.size() <= 100
+        && data.status is string && data.status in ['HADIR', 'IJIN', 'ALPA']
+        && data.note is string && data.note.size() <= 300
+        && data.createdAt is timestamp;
+    }
+
+    function isValidUserAccount(data, userId) {
+      return data.keys().hasAll(['uid', 'displayName', 'email', 'role', 'createdAt'])
+        && data.keys().hasOnly(['uid', 'displayName', 'email', 'role', 'createdAt'])
+        && data.uid is string && data.uid == userId && data.uid.size() >= 1 && data.uid.size() <= 128
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 120
+        && data.email is string && data.email.size() >= 3 && data.email.size() <= 160
+        && data.role is string && data.role in ['siswa', 'guru']
+        && data.createdAt is timestamp;
+    }
+
+    function isValidAdminMember(data) {
+      return data.keys().hasAll(['email', 'role', 'createdAt'])
+        && data.keys().hasOnly(['email', 'role', 'createdAt'])
+        && data.email is string && data.email.size() >= 3 && data.email.size() <= 160
+        && data.role is string && data.role in ['admin', 'guru']
+        && data.createdAt is timestamp;
+    }
+
+    // ==================== COLLECTION RULES ====================
+
+    // Attendance records: visible & fillable manually by website visitors;
+    // updates & deletions protected for verified admin/teacher only.
+    match /attendance/{recordId} {
+      allow get: if isValidId(recordId);
+      allow list: if true;
+      allow create: if isValidId(recordId)
+        && isValidAttendanceRecord(incoming())
+        && incoming().createdAt == request.time;
+      allow update: if isValidId(recordId)
+        && isAdmin()
+        && isValidAttendanceRecord(incoming())
+        && incoming().createdAt == existing().createdAt
+        && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'timeStr', 'note', 'lessonPeriod']);
+      allow delete: if isValidId(recordId) && isAdmin();
+    }
+
+    // Private user profiles (PII protected)
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isValidId(userId)
+        && isOwner(userId)
+        && isValidUserAccount(incoming(), userId)
+        && incoming().role == 'siswa'
+        && incoming().email == request.auth.token.email
+        && incoming().createdAt == request.time;
+      allow update: if isValidId(userId)
+        && isValidUserAccount(incoming(), userId)
+        && incoming().uid == existing().uid
+        && incoming().email == existing().email
+        && incoming().createdAt == existing().createdAt
+        && (
+          (isAdmin() && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'role'])) ||
+          (isOwner(userId) && incoming().role == existing().role && incoming().diff(existing()).affectedKeys().hasOnly(['displayName']))
+        );
+      allow delete: if isValidId(userId) && isAdmin();
+    }
+
+    // Admin roster
+    match /admins/{adminUid} {
+      allow get: if isValidId(adminUid) && isAdmin();
+      allow list: if isAdmin();
+      allow create: if isValidId(adminUid)
+        && isAdmin()
+        && isValidAdminMember(incoming())
+        && incoming().createdAt == request.time;
+      allow update: if isValidId(adminUid)
+        && isAdmin()
+        && isValidAdminMember(incoming())
+        && incoming().createdAt == existing().createdAt
+        && incoming().diff(existing()).affectedKeys().hasOnly(['email', 'role']);
+      allow delete: if isValidId(adminUid) && isAdmin();
+    }
+  }
+}

@@ -1,0 +1,152 @@
+{
+  "entities": {
+    "AttendanceRecord": {
+      "title": "AttendanceRecord",
+      "description": "Catatan kehadiran siswa SMANDE (Kelas X-1 s.d. XII-10) yang diisi manual oleh pengunjung atau dikelola oleh guru pengampu.",
+      "type": "object",
+      "properties": {
+        "studentName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "description": "Nama lengkap siswa."
+        },
+        "className": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 10,
+          "pattern": "^(X|XI|XII)-([1-9]|10)$",
+          "description": "Kelas siswa dari X-1..X-10, XI-1..XI-10, atau XII-1..XII-10."
+        },
+        "grade": {
+          "type": "string",
+          "enum": ["X", "XI", "XII"],
+          "description": "Jenjang kelas siswa."
+        },
+        "dayName": {
+          "type": "string",
+          "enum": ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"],
+          "description": "Hari absensi dalam Bahasa Indonesia."
+        },
+        "dateStr": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60,
+          "description": "Tanggal lengkap absensi."
+        },
+        "timeStr": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60,
+          "description": "Jam detail absensi (WIB)."
+        },
+        "lessonPeriod": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Jam pelajaran terkait."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["HADIR", "IJIN", "ALPA"],
+          "description": "Status kehadiran siswa."
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 300,
+          "description": "Keterangan tambahan kehadiran."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp pembuatan dokumen di server Firestore."
+        }
+      },
+      "required": [
+        "studentName",
+        "className",
+        "grade",
+        "dayName",
+        "dateStr",
+        "timeStr",
+        "lessonPeriod",
+        "status",
+        "note",
+        "createdAt"
+      ]
+    },
+    "UserAccount": {
+      "title": "UserAccount",
+      "description": "Profil akun pengguna terautentikasi Google Sign-In (privat untuk pemilik akun dan admin).",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "Firebase Authentication UID."
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "description": "Nama tampilan pengguna."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 160,
+          "description": "Alamat email terverifikasi pengguna."
+        },
+        "role": {
+          "type": "string",
+          "enum": ["siswa", "guru"],
+          "description": "Peran pengguna standar."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Waktu pembuatan akun."
+        }
+      },
+      "required": ["uid", "displayName", "email", "role", "createdAt"]
+    },
+    "AdminMember": {
+      "title": "AdminMember",
+      "description": "Daftar UID guru/admin pengelola portal.",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 160,
+          "description": "Email guru/admin."
+        },
+        "role": {
+          "type": "string",
+          "enum": ["admin", "guru"],
+          "description": "Tingkat otorisasi admin."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Waktu penetapan admin."
+        }
+      },
+      "required": ["email", "role", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/attendance/{recordId}": {
+      "schema": { "$ref": "#/entities/AttendanceRecord" },
+      "description": "Koleksi publik absensi siswa SMANDE yang diisi manual oleh pengunjung dan terlihat oleh seluruh pengunjung."
+    },
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserAccount" },
+      "description": "Koleksi privat profil pengguna Google Sign-In."
+    },
+    "/admins/{adminUid}": {
+      "schema": { "$ref": "#/entities/AdminMember" },
+      "description": "Koleksi daftar pengampu/admin resmi sekolah."
+    }
+  }
+}

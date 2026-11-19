@@ -15,15 +15,35 @@ import {
   ChevronRight,
   UserPlus,
   RefreshCw,
+  LogIn,
+  LogOut,
+  ShieldCheck,
 } from 'lucide-react';
-import { AttendanceStatus, GradeLevel, StudentAttendanceRecord } from '../types';
 import {
-  CLASS_GROUPS,
-  INDONESIAN_DAYS,
-  getStoredAttendance,
-  saveStoredAttendance,
-  clearStoredAttendance,
-} from '../data/attendanceData';
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+  writeBatch,
+} from 'firebase/firestore';
+import {
+  onValue,
+  ref as rtdbRef,
+  remove as rtdbRemove,
+  serverTimestamp as rtdbServerTimestamp,
+  set as rtdbSet,
+  update as rtdbUpdate,
+} from 'firebase/database';
+import { onAuthStateChanged, signInWithPopup, signOut, User } from 'firebase/auth';
+import { AttendanceStatus, GradeLevel, StudentAttendanceRecord } from '../types';
+import { CLASS_GROUPS, INDONESIAN_DAYS } from '../data/attendanceData';
+import { auth, db, googleAuthProvider, handleFirestoreError, OperationType, rtdb } from '../lib/firebase';
 import { sound } from '../utils/audio';
 
 const LESSON_PERIOD_OPTIONS = [
@@ -50,6 +70,7 @@ const MONTHS_ID = [
 ];
 
 const DAYS_ID = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+const ADMIN_EMAIL = 'munawarrois81@guru.sma.belajar.id';
 
 function getCurrentIndonesianDateTime() {
   const now = new Date();
@@ -92,9 +113,24 @@ function getStatusBadgeConfig(status: AttendanceStatus) {
   }
 }
 
+type TimedAttendanceRecord = StudentAttendanceRecord & { createdAtMs: number };
+
 export const StudentAttendanceView: React.FC = () => {
-  const [records, setRecords] = useState<StudentAttendanceRecord[]>(getStoredAttendance);
+  const [rtdbRecords, setRtdbRecords] = useState<TimedAttendanceRecord[]>([]);
+  const [firestoreRecords, setFirestoreRecords] = useState<TimedAttendanceRecord[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [liveClock, setLiveClock] = useState(getCurrentIndonesianDateTime);
+  const [authUser, setAuthUser] = useState<User | null>(auth.currentUser);
+  const [isAuthBusy, setIsAuthBusy] = useState(false);
+
+  const records = useMemo<StudentAttendanceRecord[]>(() => {
+    const merged = new Map<string, TimedAttendanceRecord>();
+    firestoreRecords.forEach((r) => merged.set(r.id, r));
+    rtdbRecords.forEach((r) => merged.set(r.id, r));
+    return Array.from(merged.values())
+      .sort((a, b) => b.createdAtMs - a.createdAtMs)
+      .map(({ createdAtMs: _createdAtMs, ...rest }) => rest);
+  }, [rtdbRecords, firestoreRecords]);
 
   // Manual Visitor Entry Form State (always visible)
   const [newName, setNewName] = useState('');
@@ -120,6 +156,10 @@ export const StudentAttendanceView: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [confirmClearAll, setConfirmClearAll] = useState(false);
 
+  const isTeacherAdmin = Boolean(
+    authUser && authUser.emailVerified && authUser.email === ADMIN_EMAIL
+  );
+
   useEffect(() => {
     const timer = setInterval(() => {
       setLiveClock(getCurrentIndonesianDateTime());
@@ -127,23 +167,99 @@ export const StudentAttendanceView: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Load shared attendance data from server (starts empty; syncs with localStorage fallback)
+  // Track Firebase Auth state for teacher management controls
   useEffect(() => {
-    let active = true;
-    fetch('/api/attendance')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (!active || !data || !Array.isArray(data.records)) return;
-        if (data.records.length > 0) {
-          setRecords(data.records);
-          saveStoredAttendance(data.records);
+    const unsubAuth = onAuthStateChanged(auth, async (user) => {
+      setAuthUser(user);
+      if (user && user.emailVerified && user.email) {
+        const userDocPath = `users/${user.uid}`;
+        try {
+          const snap = await getDoc(doc(db, 'users', user.uid));
+          if (!snap.exists()) {
+            await setDoc(doc(db, 'users', user.uid), {
+              uid: user.uid,
+              displayName: (user.displayName || user.email.split('@')[0] || 'Pengguna').slice(0, 120),
+              email: user.email.slice(0, 160),
+              role: 'siswa',
+              createdAt: serverTimestamp(),
+            });
+          }
+        } catch (err) {
+          handleFirestoreError(err, OperationType.WRITE, userDocPath);
         }
-      })
-      .catch(() => {
-        // Fallback already initialized from localStorage
-      });
+      }
+    });
+    return () => unsubAuth();
+  }, []);
+
+  // Subscribe to real-time attendance records from Firebase Realtime Database & Firestore
+  useEffect(() => {
+    const attendancePath = 'attendance';
+
+    const unsubRtdb = onValue(
+      rtdbRef(rtdb, attendancePath),
+      (snapshot) => {
+        const val = snapshot.val() as Record<string, Record<string, unknown>> | null;
+        if (!val || typeof val !== 'object') {
+          setRtdbRecords([]);
+          setIsLoading(false);
+          return;
+        }
+        const loaded: TimedAttendanceRecord[] = Object.entries(val).map(([key, data]) => ({
+          id: key,
+          studentName: String(data.studentName || ''),
+          className: String(data.className || ''),
+          grade: (data.grade === 'XII' || data.grade === 'XI' ? data.grade : 'X') as GradeLevel,
+          dayName: String(data.dayName || 'Senin'),
+          dateStr: String(data.dateStr || ''),
+          timeStr: String(data.timeStr || ''),
+          lessonPeriod: String(data.lessonPeriod || ''),
+          status: (data.status === 'IJIN' || data.status === 'ALPA' ? data.status : 'HADIR') as AttendanceStatus,
+          note: String(data.note || ''),
+          createdAtMs: typeof data.createdAt === 'number' ? data.createdAt : 0,
+        }));
+        setRtdbRecords(loaded);
+        setIsLoading(false);
+      },
+      () => {
+        // If RTDB rules restrict direct access, Firestore listener keeps data active
+        setIsLoading(false);
+      }
+    );
+
+    const q = query(collection(db, attendancePath), orderBy('createdAt', 'desc'));
+    const unsubFirestore = onSnapshot(
+      q,
+      (snapshot) => {
+        const loaded: TimedAttendanceRecord[] = snapshot.docs.map((docSnap) => {
+          const data = docSnap.data();
+          const ts = data.createdAt as { toMillis?: () => number } | undefined;
+          return {
+            id: docSnap.id,
+            studentName: String(data.studentName || ''),
+            className: String(data.className || ''),
+            grade: (data.grade === 'XII' || data.grade === 'XI' ? data.grade : 'X') as GradeLevel,
+            dayName: String(data.dayName || 'Senin'),
+            dateStr: String(data.dateStr || ''),
+            timeStr: String(data.timeStr || ''),
+            lessonPeriod: String(data.lessonPeriod || ''),
+            status: (data.status === 'IJIN' || data.status === 'ALPA' ? data.status : 'HADIR') as AttendanceStatus,
+            note: String(data.note || ''),
+            createdAtMs: ts && typeof ts.toMillis === 'function' ? ts.toMillis() : Date.now(),
+          };
+        });
+        setFirestoreRecords(loaded);
+        setIsLoading(false);
+      },
+      (error) => {
+        setIsLoading(false);
+        handleFirestoreError(error, OperationType.GET, attendancePath);
+      }
+    );
+
     return () => {
-      active = false;
+      unsubRtdb();
+      unsubFirestore();
     };
   }, []);
 
@@ -193,6 +309,25 @@ export const StudentAttendanceView: React.FC = () => {
     }, 4000);
   };
 
+  const handleTeacherSignIn = async () => {
+    sound.playClick();
+    setIsAuthBusy(true);
+    setErrorMsg(null);
+    try {
+      await signInWithPopup(auth, googleAuthProvider);
+    } catch {
+      setErrorMsg('Proses masuk Google dibatalkan atau gagal.');
+    } finally {
+      setIsAuthBusy(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    sound.playClick();
+    await signOut(auth);
+    showNotice('Berhasil keluar dari akun guru.');
+  };
+
   const handleFillNowTime = () => {
     sound.playClick();
     const now = getCurrentIndonesianDateTime();
@@ -203,7 +338,7 @@ export const StudentAttendanceView: React.FC = () => {
 
   const handleAddRecord = async (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmedName = newName.trim();
+    const trimmedName = newName.trim().slice(0, 120);
     if (!trimmedName) {
       setErrorMsg('Silakan isi Nama Lengkap Siswa terlebih dahulu.');
       return;
@@ -222,52 +357,65 @@ export const StudentAttendanceView: React.FC = () => {
     sound.playCorrect();
 
     const now = getCurrentIndonesianDateTime();
-    const grade = newClass.split('-')[0] as GradeLevel;
-    const resolvedNote =
+    const gradePrefix = newClass.split('-')[0];
+    const grade: GradeLevel = gradePrefix === 'XII' ? 'XII' : gradePrefix === 'XI' ? 'XI' : 'X';
+    const safeDayName = INDONESIAN_DAYS.includes(newDay as (typeof INDONESIAN_DAYS)[number])
+      ? newDay
+      : now.dayName;
+    const resolvedDateStr = (newDateStr.trim() || now.dateStr).slice(0, 60);
+    const resolvedTimeStr = (
+      newStatus === 'ALPA' ? '— (Tanpa Keterangan)' : newTimeStr.trim() || now.timeStr
+    ).slice(0, 60);
+    const resolvedPeriod = newPeriod.slice(0, 100);
+    const resolvedNote = (
       newNote.trim() ||
       (newStatus === 'HADIR'
         ? 'Hadir mengikuti pembelajaran'
         : newStatus === 'IJIN'
         ? 'Ijin berhalangan hadir'
-        : 'Tidak hadir tanpa keterangan');
+        : 'Tidak hadir tanpa keterangan')
+    ).slice(0, 300);
 
-    const entry: StudentAttendanceRecord = {
-      id: `att-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      studentName: trimmedName,
-      className: newClass,
-      grade,
-      dayName: newDay || now.dayName,
-      dateStr: newDateStr.trim() || now.dateStr,
-      timeStr: newStatus === 'ALPA' ? '— (Tanpa Keterangan)' : newTimeStr.trim() || now.timeStr,
-      lessonPeriod: newPeriod,
-      status: newStatus,
-      note: resolvedNote,
-    };
+    const recordId = `att-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const recordPath = `attendance/${recordId}`;
 
-    const nextRecords = [entry, ...records];
-    setRecords(nextRecords);
-    saveStoredAttendance(nextRecords);
-
+    // Attempt direct Realtime Database write
     try {
-      const res = await fetch('/api/attendance', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(entry),
+      await rtdbSet(rtdbRef(rtdb, recordPath), {
+        studentName: trimmedName,
+        className: newClass,
+        grade,
+        dayName: safeDayName,
+        dateStr: resolvedDateStr,
+        timeStr: resolvedTimeStr,
+        lessonPeriod: resolvedPeriod,
+        status: newStatus,
+        note: resolvedNote,
+        createdAt: rtdbServerTimestamp(),
       });
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data.records)) {
-          setRecords(data.records);
-          saveStoredAttendance(data.records);
-        }
-      }
     } catch {
-      // Keep localStorage copy if server request fails
-    } finally {
-      setIsSubmitting(false);
+      // Continue to Firestore persistence if RTDB rules restrict unauthenticated writes
     }
 
-    // Reset manual fields for next visitor while keeping current clock fresh
+    try {
+      await setDoc(doc(db, 'attendance', recordId), {
+        studentName: trimmedName,
+        className: newClass,
+        grade,
+        dayName: safeDayName,
+        dateStr: resolvedDateStr,
+        timeStr: resolvedTimeStr,
+        lessonPeriod: resolvedPeriod,
+        status: newStatus,
+        note: resolvedNote,
+        createdAt: serverTimestamp(),
+      });
+    } catch (err) {
+      setIsSubmitting(false);
+      handleFirestoreError(err, OperationType.CREATE, recordPath);
+    }
+
+    setIsSubmitting(false);
     setNewName('');
     setNewClass('');
     setNewStatus('');
@@ -276,79 +424,92 @@ export const StudentAttendanceView: React.FC = () => {
     setNewDateStr(now.dateStr);
     setNewTimeStr(now.timeStr);
 
-    showNotice(`Absensi "${entry.studentName}" (${entry.className}) — ${entry.status} berhasil dicatat.`);
+    showNotice(`Absensi "${trimmedName}" (${newClass}) — ${newStatus} berhasil disimpan.`);
   };
 
-  const handleStatusChange = async (id: string, nextStatus: AttendanceStatus) => {
+  const handleStatusChange = async (rec: StudentAttendanceRecord, nextStatus: AttendanceStatus) => {
+    if (!isTeacherAdmin) return;
     sound.playClick();
     const nowTime = getCurrentIndonesianDateTime().timeStr;
-    const defaultNoteByStatus =
+    const defaultNoteByStatus = (
       nextStatus === 'HADIR'
         ? 'Hadir mengikuti pembelajaran'
         : nextStatus === 'IJIN'
         ? 'Ijin berhalangan hadir'
-        : 'Tidak hadir tanpa keterangan';
+        : 'Tidak hadir tanpa keterangan'
+    ).slice(0, 300);
 
-    let nextTimeStr = nowTime;
-    const updated = records.map((rec) => {
-      if (rec.id !== id) return rec;
-      nextTimeStr =
-        nextStatus === 'ALPA'
-          ? '— (Tanpa Keterangan)'
-          : rec.timeStr.startsWith('—')
-          ? nowTime
-          : rec.timeStr;
-      return {
-        ...rec,
+    const nextTimeStr = (
+      nextStatus === 'ALPA'
+        ? '— (Tanpa Keterangan)'
+        : rec.timeStr.startsWith('—')
+        ? nowTime
+        : rec.timeStr
+    ).slice(0, 60);
+
+    const recordPath = `attendance/${rec.id}`;
+    try {
+      await rtdbUpdate(rtdbRef(rtdb, recordPath), {
         status: nextStatus,
         timeStr: nextTimeStr,
         note: defaultNoteByStatus,
-      };
-    });
-
-    setRecords(updated);
-    saveStoredAttendance(updated);
-
-    try {
-      await fetch(`/api/attendance/${encodeURIComponent(id)}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: nextStatus, timeStr: nextTimeStr, note: defaultNoteByStatus }),
       });
     } catch {
-      // Keep local update
+      // Continue with Firestore update
     }
-    showNotice(`Status absensi diperbarui menjadi ${nextStatus}.`);
+
+    try {
+      await updateDoc(doc(db, 'attendance', rec.id), {
+        status: nextStatus,
+        timeStr: nextTimeStr,
+        note: defaultNoteByStatus,
+      });
+      showNotice(`Status absensi "${rec.studentName}" diperbarui menjadi ${nextStatus}.`);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, recordPath);
+    }
   };
 
   const handleDeleteRecord = async (id: string, name: string) => {
+    if (!isTeacherAdmin) return;
     sound.playClick();
-    const updated = records.filter((r) => r.id !== id);
-    setRecords(updated);
-    saveStoredAttendance(updated);
+    const recordPath = `attendance/${id}`;
     try {
-      await fetch(`/api/attendance/${encodeURIComponent(id)}`, { method: 'DELETE' });
+      await rtdbRemove(rtdbRef(rtdb, recordPath));
     } catch {
-      // Keep local update
+      // Continue with Firestore delete
     }
-    showNotice(`Data absensi "${name}" telah dihapus.`);
+    try {
+      await deleteDoc(doc(db, 'attendance', id));
+      showNotice(`Data absensi "${name}" telah dihapus.`);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, recordPath);
+    }
   };
 
   const handleClearAll = async () => {
+    if (!isTeacherAdmin || records.length === 0) return;
     sound.playClick();
-    const cleared = clearStoredAttendance();
-    setRecords(cleared);
-    setConfirmClearAll(false);
-    setSelectedClass('ALL');
-    setSelectedStatus('ALL');
-    setSelectedDay('ALL');
-    setSearchQuery('');
     try {
-      await fetch('/api/attendance', { method: 'DELETE' });
+      await rtdbRemove(rtdbRef(rtdb, 'attendance'));
     } catch {
-      // Keep local clear
+      // Continue with Firestore batch clear
     }
-    showNotice('Seluruh daftar absensi telah dikosongkan.');
+    try {
+      const batch = writeBatch(db);
+      records.forEach((rec) => {
+        batch.delete(doc(db, 'attendance', rec.id));
+      });
+      await batch.commit();
+      setConfirmClearAll(false);
+      setSelectedClass('ALL');
+      setSelectedStatus('ALL');
+      setSelectedDay('ALL');
+      setSearchQuery('');
+      showNotice('Seluruh daftar absensi telah dikosongkan.');
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, 'attendance');
+    }
   };
 
   const handleDownloadCsv = () => {
@@ -419,16 +580,53 @@ export const StudentAttendanceView: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-sky-50 border border-sky-200 rounded-xl px-4 py-2.5 flex items-center gap-3 shrink-0">
-            <Clock size={18} className="text-sky-600 shrink-0" />
-            <div>
-              <div className="text-[11px] font-bold text-sky-800 uppercase tracking-wide">
-                {liveClock.liveDayName}, {liveClock.dateStr}
-              </div>
-              <div className="text-base font-black text-slate-900 font-mono tabular-nums">
-                {liveClock.timeStr}
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <div className="bg-sky-50 border border-sky-200 rounded-xl px-4 py-2.5 flex items-center gap-3">
+              <Clock size={18} className="text-sky-600 shrink-0" />
+              <div>
+                <div className="text-[11px] font-bold text-sky-800 uppercase tracking-wide">
+                  {liveClock.liveDayName}, {liveClock.dateStr}
+                </div>
+                <div className="text-base font-black text-slate-900 font-mono tabular-nums">
+                  {liveClock.timeStr}
+                </div>
               </div>
             </div>
+
+            {authUser ? (
+              <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
+                <ShieldCheck
+                  size={16}
+                  className={isTeacherAdmin ? 'text-emerald-600 shrink-0' : 'text-sky-600 shrink-0'}
+                />
+                <div className="text-[11px] leading-tight">
+                  <div className="font-bold text-slate-800 truncate max-w-[140px]">
+                    {authUser.displayName || authUser.email}
+                  </div>
+                  <div className="text-slate-500">
+                    {isTeacherAdmin ? 'Mode Kelola Guru' : 'Pengguna Terdaftar'}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  className="btn-3d btn-3d-white px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-slate-700 flex items-center gap-1 cursor-pointer"
+                >
+                  <LogOut size={12} />
+                  <span>Keluar</span>
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                disabled={isAuthBusy}
+                onClick={handleTeacherSignIn}
+                className="btn-3d btn-3d-white px-3.5 py-2.5 rounded-xl text-xs font-bold text-sky-800 flex items-center gap-1.5 cursor-pointer disabled:opacity-60"
+              >
+                <LogIn size={14} />
+                <span>{isAuthBusy ? 'Membuka...' : 'Masuk Guru (Google)'}</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -506,6 +704,7 @@ export const StudentAttendanceView: React.FC = () => {
               id="manual-nama"
               type="text"
               required
+              maxLength={120}
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder="Ketik nama lengkap Anda..."
@@ -583,6 +782,7 @@ export const StudentAttendanceView: React.FC = () => {
             <input
               id="manual-tanggal"
               type="text"
+              maxLength={60}
               value={newDateStr}
               onChange={(e) => setNewDateStr(e.target.value)}
               placeholder="18 November 2026"
@@ -597,6 +797,7 @@ export const StudentAttendanceView: React.FC = () => {
             <input
               id="manual-jam"
               type="text"
+              maxLength={60}
               value={newTimeStr}
               onChange={(e) => setNewTimeStr(e.target.value)}
               placeholder="07:05:12 WIB"
@@ -629,6 +830,7 @@ export const StudentAttendanceView: React.FC = () => {
             <input
               id="manual-ket"
               type="text"
+              maxLength={300}
               value={newNote}
               onChange={(e) => setNewNote(e.target.value)}
               placeholder="Contoh: Hadir / Ijin sakit"
@@ -723,7 +925,7 @@ export const StudentAttendanceView: React.FC = () => {
               <span>Unduh CSV</span>
             </button>
 
-            {records.length > 0 && !confirmClearAll && (
+            {isTeacherAdmin && records.length > 0 && !confirmClearAll && (
               <button
                 type="button"
                 onClick={() => setConfirmClearAll(true)}
@@ -734,7 +936,7 @@ export const StudentAttendanceView: React.FC = () => {
               </button>
             )}
 
-            {confirmClearAll && (
+            {isTeacherAdmin && confirmClearAll && (
               <div className="flex items-center gap-1.5 bg-rose-50 border border-rose-200 rounded-xl px-2.5 py-1">
                 <span className="text-[11px] font-bold text-rose-800">Hapus semua?</span>
                 <button
@@ -870,7 +1072,11 @@ export const StudentAttendanceView: React.FC = () => {
           </div>
         </div>
 
-        {records.length === 0 ? (
+        {isLoading ? (
+          <div className="p-10 text-center text-xs font-semibold text-slate-500">
+            Memuat daftar absensi siswa...
+          </div>
+        ) : records.length === 0 ? (
           <div className="p-10 text-center space-y-2">
             <div className="w-12 h-12 mx-auto rounded-2xl bg-sky-50 border border-sky-200 text-sky-600 flex items-center justify-center">
               <ClipboardCheck size={22} />
@@ -907,7 +1113,7 @@ export const StudentAttendanceView: React.FC = () => {
                   <th className="py-3 px-4 min-w-[185px]">Jam Detail &amp; JP</th>
                   <th className="py-3 px-4 min-w-[195px]">Status (HADIR / IJIN / ALPA)</th>
                   <th className="py-3 px-4 min-w-[200px]">Keterangan</th>
-                  <th className="py-3 px-4 w-14 text-center">Hapus</th>
+                  {isTeacherAdmin && <th className="py-3 px-4 w-14 text-center">Hapus</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs">
@@ -947,31 +1153,35 @@ export const StudentAttendanceView: React.FC = () => {
                             <StatusIcon size={12} />
                             <span>{badge.label}</span>
                           </span>
-                          <select
-                            aria-label={`Ubah status ${rec.studentName}`}
-                            value={rec.status}
-                            onChange={(e) =>
-                              handleStatusChange(rec.id, e.target.value as AttendanceStatus)
-                            }
-                            className={`px-2 py-1 rounded-lg border text-[11px] font-bold cursor-pointer focus:outline-none focus:ring-2 focus:ring-sky-400 ${badge.selectBg}`}
-                          >
-                            <option value="HADIR">HADIR</option>
-                            <option value="IJIN">IJIN</option>
-                            <option value="ALPA">ALPA</option>
-                          </select>
+                          {isTeacherAdmin && (
+                            <select
+                              aria-label={`Ubah status ${rec.studentName}`}
+                              value={rec.status}
+                              onChange={(e) =>
+                                handleStatusChange(rec, e.target.value as AttendanceStatus)
+                              }
+                              className={`px-2 py-1 rounded-lg border text-[11px] font-bold cursor-pointer focus:outline-none focus:ring-2 focus:ring-sky-400 ${badge.selectBg}`}
+                            >
+                              <option value="HADIR">HADIR</option>
+                              <option value="IJIN">IJIN</option>
+                              <option value="ALPA">ALPA</option>
+                            </select>
+                          )}
                         </div>
                       </td>
                       <td className="py-3 px-4 text-slate-600">{rec.note}</td>
-                      <td className="py-3 px-4 text-center">
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteRecord(rec.id, rec.studentName)}
-                          title={`Hapus data ${rec.studentName}`}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </td>
+                      {isTeacherAdmin && (
+                        <td className="py-3 px-4 text-center">
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteRecord(rec.id, rec.studentName)}
+                            title={`Hapus data ${rec.studentName}`}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   );
                 })}
