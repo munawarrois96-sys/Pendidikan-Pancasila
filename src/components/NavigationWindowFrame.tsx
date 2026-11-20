@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, ChevronRight, RotateCcw } from 'lucide-react';
+import { ArrowLeft, ChevronRight, ExternalLink, RotateCcw } from 'lucide-react';
 
 interface NavItemInfo {
   id: string;
@@ -7,6 +7,7 @@ interface NavItemInfo {
   icon: React.ComponentType<{ size?: number; className?: string }>;
   category: string;
   desc: string;
+  href?: string;
 }
 
 interface NavigationWindowFrameProps {
@@ -94,6 +95,21 @@ export const NavigationWindowFrame: React.FC<NavigationWindowFrameProps> = ({
             {siblingItems.map((sib) => {
               const SibIcon = sib.icon;
               const isSibActive = sib.id === activeMenuId;
+              if (sib.href) {
+                return (
+                  <a
+                    key={sib.id}
+                    href={sib.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-3d btn-3d-white inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap shrink-0 text-slate-700 hover:text-sky-800 cursor-pointer"
+                  >
+                    <SibIcon size={13} className="text-sky-600" />
+                    <span>{sib.label}</span>
+                    <ExternalLink size={11} className="text-sky-500" />
+                  </a>
+                );
+              }
               return (
                 <button
                   key={sib.id}

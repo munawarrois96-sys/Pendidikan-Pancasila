@@ -204,8 +204,15 @@ export default function App() {
     };
   }, []);
 
-  // 20 Main Navigation Items with categories for clear visitor navigation
-  const navItems = [
+  // Main Navigation Items with categories for clear visitor navigation
+  const navItems: Array<{
+    id: string;
+    label: string;
+    icon: React.ComponentType<{ size?: number; className?: string }>;
+    category: string;
+    desc: string;
+    href?: string;
+  }> = [
     { id: 'beranda', label: 'Beranda', icon: Home, category: 'Utama', desc: 'Sambutan guru, profil sekolah, dan gambaran umum' },
     { id: 'simulasiCpns', label: 'Simulasi CPNS (SKD 110 Soal)', icon: Award, category: 'Asesmen', desc: 'Simulasi CAT BKN: TKP (45), TIU (35), TWK (30), durasi 100 menit, skor maks 550' },
     { id: 'simulasiPppk', label: 'Simulasi PPPK (145 Soal)', icon: UserCheck, category: 'Asesmen', desc: 'Seleksi Kompetensi Teknis (90), Manajerial (25), Sosio-Kultural (20), Wawancara (10)' },
@@ -223,6 +230,7 @@ export default function App() {
     { id: 'nusantara', label: 'Peta Nusantara', icon: Compass, category: 'Kebinekaan', desc: 'Eksplorasi budaya dan gotong royong 38 provinsi' },
     { id: 'elibrary', label: 'E-Library', icon: Library, category: 'Referensi', desc: 'Buku Kemdikbud, UUD 1945, 45 Butir Sila' },
     { id: 'glosarium', label: 'Glosarium Pancasila', icon: BookMarked, category: 'Referensi', desc: 'Kamus istilah lengkap Pancasila, konstitusi, hukum & demokrasi' },
+    { id: 'jendelaWawasan', label: 'Jendela Wawasan', icon: BookOpen, category: 'Referensi', desc: 'Navigasi tambahan literasi digital & bahan bacaan wawasan', href: 'https://jendelawawasan.pages.dev/#top' },
     { id: 'forum', label: 'Forum Diskusi', icon: MessageSquare, category: 'Komunitas', desc: 'Mimbar musyawarah & refleksi etika berbangsa' },
     { id: 'agenda', label: 'Agenda & Tugas', icon: Calendar, category: 'Sekolah', desc: 'Kalender asesmen & hari besar nasional' },
     { id: 'absensiSiswa', label: 'Absensi Siswa', icon: ClipboardCheck, category: 'Manajemen', desc: 'Isi manual Nama, Kelas X-1 s.d. XII-10, hari, jam detail & kehadiran HADIR/IJIN/ALPA' },
@@ -252,7 +260,7 @@ export default function App() {
       label: 'Belajar',
       icon: BookOpen,
       iconColor: 'text-emerald-600',
-      itemIds: ['materi', 'video', 'elibrary', 'glosarium', 'galeriPresiden', 'galeriTokoh', 'nusantara'],
+      itemIds: ['materi', 'video', 'elibrary', 'glosarium', 'jendelaWawasan', 'galeriPresiden', 'galeriTokoh', 'nusantara'],
     },
     {
       key: 'mainUji',
@@ -526,6 +534,35 @@ export default function App() {
                             </div>
                             {headerNavMatches.map((item) => {
                               const Icon = item.icon;
+                              if (item.href) {
+                                return (
+                                  <a
+                                    key={item.id}
+                                    href={item.href}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={() => {
+                                      sound.playClick();
+                                      setHeaderSearch('');
+                                      setIsSearchFocused(false);
+                                    }}
+                                    className="w-full flex items-center gap-2.5 p-2 rounded-xl hover:bg-sky-50 text-left transition-colors cursor-pointer"
+                                  >
+                                    <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                                      <Icon size={16} />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                      <div className="text-xs font-bold text-slate-800 truncate flex items-center gap-1">
+                                        <span>{item.label}</span>
+                                        <ExternalLink size={12} className="text-emerald-600 shrink-0" />
+                                      </div>
+                                      <div className="text-[11px] text-slate-500 truncate">
+                                        {item.desc}
+                                      </div>
+                                    </div>
+                                  </a>
+                                );
+                              }
                               return (
                                 <button
                                   key={item.id}
@@ -662,6 +699,34 @@ export default function App() {
                       {groupItems.map((item) => {
                         const ItemIcon = item.icon;
                         const isItemActive = activeMenu === item.id;
+                        if (item.href) {
+                          return (
+                            <a
+                              key={item.id}
+                              href={item.href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={() => {
+                                sound.playClick();
+                                setOpenNavGroup(null);
+                              }}
+                              className="btn-3d btn-3d-white w-full flex items-start gap-2.5 p-2.5 rounded-xl text-left text-slate-800 cursor-pointer"
+                            >
+                              <div className="p-2 rounded-lg shrink-0 shadow-xs bg-emerald-100 text-emerald-700 border border-emerald-200">
+                                <ItemIcon size={16} />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="font-bold text-xs sm:text-sm leading-snug truncate flex items-center gap-1.5">
+                                  <span>{item.label}</span>
+                                  <ExternalLink size={12} className="text-emerald-600 shrink-0" />
+                                </div>
+                                <div className="text-[11px] truncate text-slate-500">
+                                  {item.desc}
+                                </div>
+                              </div>
+                            </a>
+                          );
+                        }
                         return (
                           <button
                             key={item.id}
@@ -860,45 +925,76 @@ export default function App() {
                             <div className="flex-1 border-t border-slate-100" />
                           </div>
                         )}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            handleNavigate(item.id);
-                            setIsNavDrawerOpen(false);
-                          }}
-                          className={`btn-3d w-full flex items-start gap-3 p-3 rounded-2xl text-left cursor-pointer ${
-                            isActive
-                              ? 'btn-3d-sky text-white'
-                              : 'btn-3d-white text-slate-800'
-                          }`}
-                        >
-                          <div
-                            className={`p-2.5 rounded-xl shrink-0 shadow-xs ${
-                              isActive ? 'bg-white/20 text-white border border-white/25' : 'bg-sky-100 text-sky-700 border border-sky-200'
+                        {item.href ? (
+                          <a
+                            href={item.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => {
+                              sound.playClick();
+                              setIsNavDrawerOpen(false);
+                            }}
+                            className="btn-3d btn-3d-white w-full flex items-start gap-3 p-3 rounded-2xl text-left text-slate-800 cursor-pointer"
+                          >
+                            <div className="p-2.5 rounded-xl shrink-0 shadow-xs bg-emerald-100 text-emerald-700 border border-emerald-200">
+                              <Icon size={18} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="font-bold text-sm leading-snug inline-flex items-center gap-1.5">
+                                  <span>{item.label}</span>
+                                  <ExternalLink size={13} className="text-emerald-600 shrink-0" />
+                                </span>
+                                <span className="text-[10px] px-2 py-0.5 rounded-full font-bold shrink-0 bg-emerald-100 text-emerald-800">
+                                  Literasi
+                                </span>
+                              </div>
+                              <p className="text-xs mt-0.5 line-clamp-1 text-slate-500">
+                                {item.desc}
+                              </p>
+                            </div>
+                          </a>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleNavigate(item.id);
+                              setIsNavDrawerOpen(false);
+                            }}
+                            className={`btn-3d w-full flex items-start gap-3 p-3 rounded-2xl text-left cursor-pointer ${
+                              isActive
+                                ? 'btn-3d-sky text-white'
+                                : 'btn-3d-white text-slate-800'
                             }`}
                           >
-                            <Icon size={18} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="font-bold text-sm leading-snug">{item.label}</span>
-                              <span
-                                className={`text-[10px] px-2 py-0.5 rounded-full font-bold shrink-0 ${
-                                  isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
-                                }`}
-                              >
-                                {item.category}
-                              </span>
-                            </div>
-                            <p
-                              className={`text-xs mt-0.5 line-clamp-1 ${
-                                isActive ? 'text-sky-100' : 'text-slate-500'
+                            <div
+                              className={`p-2.5 rounded-xl shrink-0 shadow-xs ${
+                                isActive ? 'bg-white/20 text-white border border-white/25' : 'bg-sky-100 text-sky-700 border border-sky-200'
                               }`}
                             >
-                              {item.desc}
-                            </p>
-                          </div>
-                        </button>
+                              <Icon size={18} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="font-bold text-sm leading-snug">{item.label}</span>
+                                <span
+                                  className={`text-[10px] px-2 py-0.5 rounded-full font-bold shrink-0 ${
+                                    isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+                                  }`}
+                                >
+                                  {item.category}
+                                </span>
+                              </div>
+                              <p
+                                className={`text-xs mt-0.5 line-clamp-1 ${
+                                  isActive ? 'text-sky-100' : 'text-slate-500'
+                                }`}
+                              >
+                                {item.desc}
+                              </p>
+                            </div>
+                          </button>
+                        )}
                       </React.Fragment>
                     );
                   })
@@ -1062,6 +1158,17 @@ export default function App() {
                         </button>
                       );
                     })}
+                    <a
+                      href="https://jendelawawasan.pages.dev/#top"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => sound.playClick()}
+                      className="btn-3d btn-3d-emerald flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-black text-white cursor-pointer"
+                    >
+                      <BookOpen size={13} className="text-amber-200" />
+                      <span>Jendela Wawasan</span>
+                      <ExternalLink size={12} className="text-white/90" />
+                    </a>
                   </div>
                 </div>
               </div>
@@ -1069,6 +1176,41 @@ export default function App() {
               {/* Background decorative emblem */}
               <div className="absolute -right-6 -bottom-6 text-[180px] md:text-[240px] opacity-15 pointer-events-none select-none">
                 🦅
+              </div>
+            </div>
+
+            {/* NAVIGASI TAMBAHAN LITERASI: JENDELA WAWASAN */}
+            <div className="bg-gradient-to-r from-emerald-800 via-teal-800 to-sky-900 rounded-3xl p-6 sm:p-7 text-white shadow-xl border-2 border-emerald-300/70 relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+              <div className="space-y-2 max-w-2xl z-10">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="bg-emerald-300 text-emerald-950 font-black text-xs px-3 py-1 rounded-full shadow-sm inline-flex items-center gap-1.5">
+                    <BookOpen size={13} />
+                    <span>Navigasi Tambahan Literasi</span>
+                  </span>
+                  <span className="bg-white/15 text-white font-semibold text-xs px-2.5 py-0.5 rounded-full">
+                    Portal Bacaan &amp; Wawasan Siswa SMANDE
+                  </span>
+                </div>
+                <h3 className="text-xl sm:text-2xl font-extrabold tracking-tight">
+                  Jendela Wawasan
+                </h3>
+                <p className="text-xs sm:text-sm text-emerald-50/95 leading-relaxed">
+                  Perluas literasi membaca, pengetahuan umum, dan wawasan kebangsaan melalui portal bacaan interaktif tambahan <strong>Jendela Wawasan</strong>.
+                </p>
+              </div>
+
+              <div className="z-10 shrink-0 w-full md:w-auto">
+                <a
+                  href="https://jendelawawasan.pages.dev/#top"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => sound.playClick()}
+                  className="btn-3d btn-3d-amber w-full md:w-auto px-6 py-3.5 text-sky-950 font-black text-sm rounded-2xl inline-flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <BookOpen size={18} />
+                  <span>Buka Jendela Wawasan</span>
+                  <ExternalLink size={16} />
+                </a>
               </div>
             </div>
 
@@ -1282,6 +1424,22 @@ export default function App() {
                         </button>
                       );
                     })}
+                    <a
+                      href="https://jendelawawasan.pages.dev/#top"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => sound.playClick()}
+                      className="btn-3d btn-3d-white w-full p-2.5 rounded-xl text-slate-800 text-left group flex items-center gap-2.5 cursor-pointer"
+                    >
+                      <div className="btn-3d-emerald w-8 h-8 rounded-lg text-white flex items-center justify-center shrink-0 pointer-events-none">
+                        <BookOpen size={15} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-bold text-xs truncate text-slate-800 group-hover:text-emerald-800">Jendela Wawasan</div>
+                        <div className="text-[10px] text-slate-500 truncate">Navigasi tambahan literasi &amp; bacaan</div>
+                      </div>
+                      <ExternalLink size={14} className="text-emerald-600 group-hover:translate-x-0.5 transition-transform shrink-0" />
+                    </a>
                   </div>
                 </div>
 
